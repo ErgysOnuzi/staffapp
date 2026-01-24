@@ -13,16 +13,26 @@ export const cashStatusEnum = pgEnum("cash_status", ["shortage", "exact", "extra
 export const sosTypeEnum = pgEnum("sos_type", ["police", "security", "ambulance", "firefighters"]);
 export const notificationTypeEnum = pgEnum("notification_type", ["warning", "request", "report", "cash", "break", "contract", "sos", "general"]);
 
+export const companies = pgTable("companies", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  code: text("code").notNull().unique(),
+  address: text("address"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 export const markets = pgTable("markets", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
   address: text("address"),
+  companyId: varchar("company_id").references(() => companies.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  email: text("email").notNull().unique(),
+  email: text("email").notNull(),
+  companyId: varchar("company_id").references(() => companies.id).notNull(),
   password: text("password").notNull(),
   name: text("name").notNull(),
   phone: text("phone"),
@@ -135,7 +145,11 @@ export const selectUserSchema = createSelectSchema(users);
 export const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
+  companyCode: z.string().min(4),
 });
+
+export const insertCompanySchema = createInsertSchema(companies).omit({ id: true, createdAt: true });
+export const selectCompanySchema = createSelectSchema(companies);
 
 export const insertRequestSchema = createInsertSchema(requests).omit({ id: true, createdAt: true, updatedAt: true, reviewedBy: true });
 export const selectRequestSchema = createSelectSchema(requests);
@@ -161,6 +175,7 @@ export const selectCashRegisterSchema = createSelectSchema(cashRegisters);
 export const insertMarketSchema = createInsertSchema(markets).omit({ id: true, createdAt: true });
 export const selectMarketSchema = createSelectSchema(markets);
 
+export type Company = typeof companies.$inferSelect;
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type Request = typeof requests.$inferSelect;

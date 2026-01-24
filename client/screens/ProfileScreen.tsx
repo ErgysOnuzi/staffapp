@@ -191,7 +191,7 @@ export default function ProfileScreen() {
                   Accumulated
                 </ThemedText>
                 <ThemedText type="h3" style={{ color: SemanticColors.success }}>
-                  ${user?.accumulatedSalary?.toFixed(2) || "0.00"}
+                  €{user?.accumulatedSalary ? parseFloat(user.accumulatedSalary).toFixed(2) : "0.00"}
                 </ThemedText>
               </View>
               <View style={styles.salaryItem}>
@@ -199,7 +199,7 @@ export default function ProfileScreen() {
                   Hourly Rate
                 </ThemedText>
                 <ThemedText type="h4">
-                  ${user?.hourlyRate?.toFixed(2) || "0.00"}
+                  €{user?.hourlyRate ? parseFloat(user.hourlyRate).toFixed(2) : "0.00"}
                 </ThemedText>
               </View>
               <View style={styles.salaryItem}>
@@ -207,7 +207,7 @@ export default function ProfileScreen() {
                   Holiday Rate
                 </ThemedText>
                 <ThemedText type="h4">
-                  ${user?.holidayRate?.toFixed(2) || "0.00"}
+                  €{user?.holidayRate ? parseFloat(user.holidayRate).toFixed(2) : "0.00"}
                 </ThemedText>
               </View>
             </View>

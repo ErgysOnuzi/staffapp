@@ -2,37 +2,49 @@ import type { Express } from "express";
 import { createServer, type Server } from "node:http";
 import { db } from "./db";
 import { 
-  users, markets, contracts, schedules, requests, warnings, 
+  users, markets, companies, contracts, schedules, requests, warnings, 
   cashRegisters, sosAlerts, notifications, salaryPayments,
   loginSchema, insertRequestSchema, insertScheduleSchema,
   insertWarningSchema, insertContractSchema, insertNotificationSchema,
   insertSOSSchema, insertCashRegisterSchema, insertMarketSchema
 } from "../shared/schema";
-import { eq, and, desc, gte, lte, or, sql } from "drizzle-orm";
+import { eq, and, desc, sql } from "drizzle-orm";
 import { authenticate, requireRole, hashPassword, verifyPassword, createSession, destroySession } from "./auth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/auth/register", async (req, res) => {
     try {
-      const { email, password, name, role = "staff", marketId } = req.body;
+      const { email, password, name, companyCode, role = "staff", marketId } = req.body;
       
-      const existing = await db.select().from(users).where(eq(users.email, email)).limit(1);
+      if (!companyCode) {
+        return res.status(400).json({ error: "Company code is required" });
+      }
+
+      const [company] = await db.select().from(companies).where(eq(companies.code, companyCode.toUpperCase())).limit(1);
+      if (!company) {
+        return res.status(400).json({ error: "Invalid company code" });
+      }
+
+      const existing = await db.select().from(users).where(
+        and(eq(users.email, email.toLowerCase()), eq(users.companyId, company.id))
+      ).limit(1);
       if (existing.length > 0) {
-        return res.status(400).json({ error: "Email already exists" });
+        return res.status(400).json({ error: "Email already exists in this company" });
       }
 
       const [user] = await db.insert(users).values({
-        email,
+        email: email.toLowerCase(),
         password: hashPassword(password),
         name,
         role,
+        companyId: company.id,
         marketId,
       }).returning();
 
       const token = createSession(user.id);
       const { password: _, ...userWithoutPassword } = user;
-      res.json({ user: userWithoutPassword, token });
+      res.json({ user: { ...userWithoutPassword, company }, token });
     } catch (error) {
       console.error("Register error:", error);
       res.status(500).json({ error: "Registration failed" });
@@ -43,11 +55,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const result = loginSchema.safeParse(req.body);
       if (!result.success) {
-        return res.status(400).json({ error: "Invalid email or password format" });
+        return res.status(400).json({ error: "Invalid email, password, or company code format" });
       }
 
-      const { email, password } = result.data;
-      const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
+      const { email, password, companyCode } = result.data;
+
+      const [company] = await db.select().from(companies).where(eq(companies.code, companyCode.toUpperCase())).limit(1);
+      if (!company) {
+        return res.status(401).json({ error: "Invalid company code" });
+      }
+
+      const [user] = await db.select().from(users).where(
+        and(eq(users.email, email.toLowerCase()), eq(users.companyId, company.id))
+      ).limit(1);
 
       if (!user) {
         return res.status(401).json({ error: "Invalid credentials" });
@@ -76,7 +96,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const token = createSession(user.id);
       const { password: _, ...userWithoutPassword } = user;
-      res.json({ user: userWithoutPassword, token });
+      res.json({ user: { ...userWithoutPassword, company }, token });
     } catch (error) {
       console.error("Login error:", error);
       res.status(500).json({ error: "Login failed" });
@@ -96,7 +116,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       .where(and(eq(contracts.userId, req.user!.id), eq(contracts.isActive, true)))
       .limit(1);
     
-    res.json({ user: { ...userWithoutPassword, contract } });
+    const [company] = await db.select().from(companies)
+      .where(eq(companies.id, req.user!.companyId))
+      .limit(1);
+    
+    res.json({ user: { ...userWithoutPassword, contract, company } });
   });
 
   app.get("/api/users/me", authenticate, async (req, res) => {
@@ -122,10 +146,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/users", authenticate, requireRole("admin", "manager"), async (req, res) => {
     try {
-      let query = db.select().from(users);
+      const companyId = req.user!.companyId;
+      let query = db.select().from(users).where(eq(users.companyId, companyId));
       
       if (req.user!.role === "manager" && req.user!.marketId) {
-        query = query.where(eq(users.marketId, req.user!.marketId)) as any;
+        query = db.select().from(users).where(
+          and(eq(users.companyId, companyId), eq(users.marketId, req.user!.marketId))
+        );
       }
 
       const allUsers = await query;
@@ -143,7 +170,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Forbidden" });
       }
 
-      const [user] = await db.select().from(users).where(eq(users.id, id)).limit(1);
+      const [user] = await db.select().from(users).where(
+        and(eq(users.id, id), eq(users.companyId, req.user!.companyId))
+      ).limit(1);
       if (!user) return res.status(404).json({ error: "User not found" });
 
       const { password: _, ...userWithoutPassword } = user;
@@ -163,7 +192,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       updates.updatedAt = new Date();
 
-      const [updated] = await db.update(users).set(updates).where(eq(users.id, id)).returning();
+      const [updated] = await db.update(users)
+        .set(updates)
+        .where(and(eq(users.id, id), eq(users.companyId, req.user!.companyId)))
+        .returning();
       const { password: _, ...userWithoutPassword } = updated;
       res.json(userWithoutPassword);
     } catch (error) {
@@ -173,7 +205,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/users/:id", authenticate, requireRole("admin"), async (req, res) => {
     try {
-      await db.delete(users).where(eq(users.id, req.params.id));
+      await db.delete(users).where(
+        and(eq(users.id, req.params.id), eq(users.companyId, req.user!.companyId))
+      );
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ error: "Delete failed" });
@@ -182,14 +216,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/staff", authenticate, requireRole("admin", "manager"), async (req, res) => {
     try {
+      const companyId = req.user!.companyId;
       let query;
       
       if (req.user!.role === "manager" && req.user!.marketId) {
         query = db.select().from(users).where(
-          and(eq(users.marketId, req.user!.marketId), eq(users.role, "staff"))
+          and(eq(users.companyId, companyId), eq(users.marketId, req.user!.marketId), eq(users.role, "staff"))
         );
       } else {
-        query = db.select().from(users).where(eq(users.role, "staff"));
+        query = db.select().from(users).where(
+          and(eq(users.companyId, companyId), eq(users.role, "staff"))
+        );
       }
 
       const staff = await query;
@@ -204,7 +241,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { standing } = req.body;
       const [updated] = await db.update(users)
         .set({ standing, updatedAt: new Date() })
-        .where(eq(users.id, req.params.id))
+        .where(and(eq(users.id, req.params.id), eq(users.companyId, req.user!.companyId)))
         .returning();
       
       const { password: _, ...userWithoutPassword } = updated;
@@ -216,17 +253,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/schedules", authenticate, async (req, res) => {
     try {
-      let query;
+      const companyId = req.user!.companyId;
       
+      const companyUsers = await db.select({ id: users.id }).from(users).where(eq(users.companyId, companyId));
+      const userIds = companyUsers.map(u => u.id);
+      
+      let result;
       if (req.user!.role === "staff") {
-        query = db.select().from(schedules).where(eq(schedules.userId, req.user!.id));
+        result = await db.select().from(schedules).where(eq(schedules.userId, req.user!.id)).orderBy(desc(schedules.date));
       } else if (req.user!.role === "manager" && req.user!.marketId) {
-        query = db.select().from(schedules).where(eq(schedules.marketId, req.user!.marketId));
+        result = await db.select().from(schedules).where(eq(schedules.marketId, req.user!.marketId)).orderBy(desc(schedules.date));
       } else {
-        query = db.select().from(schedules);
+        result = await db.select().from(schedules).orderBy(desc(schedules.date));
+        result = result.filter(s => userIds.includes(s.userId));
       }
 
-      const result = await query.orderBy(desc(schedules.date));
       res.json(result);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch schedules" });
@@ -245,25 +286,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/requests", authenticate, async (req, res) => {
     try {
-      let query;
+      const companyId = req.user!.companyId;
       
+      const companyUsers = await db.select({ id: users.id }).from(users).where(eq(users.companyId, companyId));
+      const userIds = companyUsers.map(u => u.id);
+      
+      let result;
       if (req.user!.role === "staff") {
-        query = db.select().from(requests).where(eq(requests.userId, req.user!.id));
-      } else if (req.user!.role === "manager") {
-        const staffIds = await db.select({ id: users.id }).from(users)
-          .where(eq(users.marketId, req.user!.marketId!));
-        const ids = staffIds.map(s => s.id);
-        query = db.select().from(requests).where(
-          and(
-            or(...ids.map(id => eq(requests.userId, id))),
-            eq(requests.isAnonymous, false)
-          )
-        );
+        result = await db.select().from(requests).where(eq(requests.userId, req.user!.id)).orderBy(desc(requests.createdAt));
       } else {
-        query = db.select().from(requests);
+        result = await db.select().from(requests).orderBy(desc(requests.createdAt));
+        result = result.filter(r => userIds.includes(r.userId));
       }
 
-      const result = await query.orderBy(desc(requests.createdAt));
       res.json(result);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch requests" });
@@ -344,7 +379,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/salary/staff/:id", authenticate, requireRole("admin", "manager"), async (req, res) => {
     try {
-      const [user] = await db.select().from(users).where(eq(users.id, req.params.id)).limit(1);
+      const [user] = await db.select().from(users).where(
+        and(eq(users.id, req.params.id), eq(users.companyId, req.user!.companyId))
+      ).limit(1);
       if (!user) return res.status(404).json({ error: "User not found" });
       
       const payments = await db.select().from(salaryPayments)
@@ -380,15 +417,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/contracts", authenticate, async (req, res) => {
     try {
-      let query;
+      const companyId = req.user!.companyId;
       
+      const companyUsers = await db.select({ id: users.id }).from(users).where(eq(users.companyId, companyId));
+      const userIds = companyUsers.map(u => u.id);
+      
+      let result;
       if (req.user!.role === "staff") {
-        query = db.select().from(contracts).where(eq(contracts.userId, req.user!.id));
+        result = await db.select().from(contracts).where(eq(contracts.userId, req.user!.id)).orderBy(desc(contracts.createdAt));
       } else {
-        query = db.select().from(contracts);
+        result = await db.select().from(contracts).orderBy(desc(contracts.createdAt));
+        result = result.filter(c => userIds.includes(c.userId));
       }
 
-      const result = await query.orderBy(desc(contracts.createdAt));
       res.json(result);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch contracts" });
@@ -409,17 +450,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/warnings", authenticate, async (req, res) => {
     try {
-      let query;
+      const companyId = req.user!.companyId;
       
+      const companyUsers = await db.select({ id: users.id }).from(users).where(eq(users.companyId, companyId));
+      const userIds = companyUsers.map(u => u.id);
+      
+      let result;
       if (req.user!.role === "staff") {
-        query = db.select().from(warnings).where(eq(warnings.userId, req.user!.id));
+        result = await db.select().from(warnings).where(eq(warnings.userId, req.user!.id)).orderBy(desc(warnings.createdAt));
       } else if (req.user!.role === "manager" && req.user!.marketId) {
-        query = db.select().from(warnings).where(eq(warnings.marketId, req.user!.marketId));
+        result = await db.select().from(warnings).where(eq(warnings.marketId, req.user!.marketId)).orderBy(desc(warnings.createdAt));
       } else {
-        query = db.select().from(warnings);
+        result = await db.select().from(warnings).orderBy(desc(warnings.createdAt));
+        result = result.filter(w => userIds.includes(w.userId));
       }
 
-      const result = await query.orderBy(desc(warnings.createdAt));
       res.json(result);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch warnings" });
@@ -449,15 +494,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/cash-register", authenticate, async (req, res) => {
     try {
-      let query;
-      
+      let result;
       if (req.user!.role === "staff") {
-        query = db.select().from(cashRegisters).where(eq(cashRegisters.userId, req.user!.id));
+        result = await db.select().from(cashRegisters).where(eq(cashRegisters.userId, req.user!.id)).orderBy(desc(cashRegisters.shiftDate));
       } else {
-        query = db.select().from(cashRegisters);
+        const companyUsers = await db.select({ id: users.id }).from(users).where(eq(users.companyId, req.user!.companyId));
+        const userIds = companyUsers.map(u => u.id);
+        result = await db.select().from(cashRegisters).orderBy(desc(cashRegisters.shiftDate));
+        result = result.filter(c => userIds.includes(c.userId));
       }
 
-      const result = await query.orderBy(desc(cashRegisters.shiftDate));
       res.json(result);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch cash register" });
@@ -495,7 +541,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         type,
       }).returning();
       
-      const admins = await db.select().from(users).where(eq(users.role, "admin"));
+      const admins = await db.select().from(users).where(
+        and(eq(users.role, "admin"), eq(users.companyId, req.user!.companyId))
+      );
       for (const admin of admins) {
         await db.insert(notifications).values({
           userId: admin.id,
@@ -513,15 +561,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/sos", authenticate, async (req, res) => {
     try {
-      let query;
-      
+      let result;
       if (req.user!.role === "staff") {
-        query = db.select().from(sosAlerts).where(eq(sosAlerts.userId, req.user!.id));
+        result = await db.select().from(sosAlerts).where(eq(sosAlerts.userId, req.user!.id)).orderBy(desc(sosAlerts.createdAt));
       } else {
-        query = db.select().from(sosAlerts);
+        const companyUsers = await db.select({ id: users.id }).from(users).where(eq(users.companyId, req.user!.companyId));
+        const userIds = companyUsers.map(u => u.id);
+        result = await db.select().from(sosAlerts).orderBy(desc(sosAlerts.createdAt));
+        result = result.filter(s => userIds.includes(s.userId));
       }
 
-      const result = await query.orderBy(desc(sosAlerts.createdAt));
       res.json(result);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch SOS alerts" });
@@ -556,20 +605,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/admin-dashboard", authenticate, requireRole("admin"), async (req, res) => {
     try {
-      const totalUsers = await db.select({ count: sql<number>`count(*)` }).from(users);
-      const pendingRequests = await db.select({ count: sql<number>`count(*)` }).from(requests)
-        .where(eq(requests.status, "pending"));
-      const activeWarnings = await db.select({ count: sql<number>`count(*)` }).from(warnings)
-        .where(eq(warnings.status, "active"));
-      const recentSOS = await db.select().from(sosAlerts)
-        .where(eq(sosAlerts.resolved, false))
-        .orderBy(desc(sosAlerts.createdAt))
-        .limit(5);
+      const companyId = req.user!.companyId;
+      
+      const companyUsers = await db.select({ id: users.id }).from(users).where(eq(users.companyId, companyId));
+      const userIds = companyUsers.map(u => u.id);
+      
+      const totalUsers = companyUsers.length;
+      
+      const allRequests = await db.select().from(requests);
+      const pendingRequests = allRequests.filter(r => userIds.includes(r.userId) && r.status === "pending").length;
+      
+      const allWarnings = await db.select().from(warnings);
+      const activeWarnings = allWarnings.filter(w => userIds.includes(w.userId) && w.status === "active").length;
+      
+      const allSOS = await db.select().from(sosAlerts).where(eq(sosAlerts.resolved, false)).orderBy(desc(sosAlerts.createdAt));
+      const recentSOS = allSOS.filter(s => userIds.includes(s.userId)).slice(0, 5);
       
       res.json({
-        totalUsers: totalUsers[0]?.count || 0,
-        pendingRequests: pendingRequests[0]?.count || 0,
-        activeWarnings: activeWarnings[0]?.count || 0,
+        totalUsers,
+        pendingRequests,
+        activeWarnings,
         recentSOS,
       });
     } catch (error) {
@@ -591,7 +646,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/markets", authenticate, async (req, res) => {
     try {
-      const result = await db.select().from(markets);
+      const result = await db.select().from(markets).where(eq(markets.companyId, req.user!.companyId));
       res.json(result);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch markets" });
@@ -600,10 +655,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/markets", authenticate, requireRole("admin"), async (req, res) => {
     try {
-      const [market] = await db.insert(markets).values(req.body).returning();
+      const [market] = await db.insert(markets).values({
+        ...req.body,
+        companyId: req.user!.companyId,
+      }).returning();
       res.json(market);
     } catch (error) {
       res.status(500).json({ error: "Failed to create market" });
+    }
+  });
+
+  app.get("/api/companies", authenticate, requireRole("admin"), async (req, res) => {
+    try {
+      const [company] = await db.select().from(companies).where(eq(companies.id, req.user!.companyId)).limit(1);
+      res.json(company);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch company" });
     }
   });
 
