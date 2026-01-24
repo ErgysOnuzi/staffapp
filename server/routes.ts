@@ -10,6 +10,7 @@ import {
 } from "../shared/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
 import { authenticate, requireRole, hashPassword, verifyPassword, createSession, destroySession } from "./auth";
+import { registerChatRoutes } from "./replit_integrations/chat";
 
 export async function registerRoutes(app: Express): Promise<Server> {
 
@@ -673,6 +674,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to fetch company" });
     }
   });
+
+  registerChatRoutes(app);
 
   const httpServer = createServer(app);
   return httpServer;

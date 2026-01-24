@@ -186,3 +186,5 @@ export type Notification = typeof notifications.$inferSelect;
 export type SOSAlert = typeof sosAlerts.$inferSelect;
 export type CashRegister = typeof cashRegisters.$inferSelect;
 export type Market = typeof markets.$inferSelect;
+
+export * from "./models/chat";

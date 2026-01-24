@@ -6,6 +6,7 @@ import LoginScreen from "@/screens/LoginScreen";
 import SOSScreen from "@/screens/SOSScreen";
 import SubmitRequestScreen from "@/screens/SubmitRequestScreen";
 import SettingsScreen from "@/screens/SettingsScreen";
+import AIAssistantScreen from "@/screens/AIAssistantScreen";
 import { useScreenOptions } from "@/hooks/useScreenOptions";
 import { useAuth } from "@/context/AuthContext";
 import { ThemedView } from "@/components/ThemedView";
@@ -18,6 +19,7 @@ export type RootStackParamList = {
   SOS: undefined;
   SubmitRequest: undefined;
   Settings: undefined;
+  AIAssistant: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -69,6 +71,13 @@ export default function RootStackNavigator() {
             component={SettingsScreen}
             options={{
               headerTitle: "Settings",
+            }}
+          />
+          <Stack.Screen
+            name="AIAssistant"
+            component={AIAssistantScreen}
+            options={{
+              headerTitle: "AI Assistant",
             }}
           />
         </>
