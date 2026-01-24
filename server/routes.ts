@@ -674,6 +674,123 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/admin/users", authenticate, requireRole("admin"), async (req, res) => {
+    try {
+      const allUsers = await db.select({
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        role: users.role,
+        standing: users.standing,
+        hourlyRate: users.hourlyRate,
+        accumulatedSalary: users.accumulatedSalary,
+      }).from(users).where(eq(users.companyId, req.user!.companyId));
+      res.json(allUsers);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch users" });
+    }
+  });
+
+  app.get("/api/manager/team", authenticate, requireRole("manager", "admin"), async (req, res) => {
+    try {
+      const today = new Date().toISOString().split("T")[0];
+      
+      const teamMembers = await db.select({
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        role: users.role,
+        standing: users.standing,
+        hourlyRate: users.hourlyRate,
+      }).from(users).where(
+        and(
+          eq(users.companyId, req.user!.companyId),
+          eq(users.role, "staff")
+        )
+      );
+
+      const todaySchedules = await db.select().from(schedules).where(
+        eq(schedules.date, today)
+      );
+
+      const result = teamMembers.map(member => {
+        const shift = todaySchedules.find(s => s.userId === member.id);
+        return {
+          ...member,
+          todayShift: shift ? {
+            startTime: shift.startTime,
+            endTime: shift.endTime,
+            position: shift.position,
+          } : null,
+        };
+      });
+
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch team" });
+    }
+  });
+
+  app.get("/api/manager/requests", authenticate, requireRole("manager", "admin"), async (req, res) => {
+    try {
+      const teamMembers = await db.select({ id: users.id, name: users.name }).from(users).where(
+        and(
+          eq(users.companyId, req.user!.companyId),
+          eq(users.role, "staff")
+        )
+      );
+
+      const memberIds = teamMembers.map(m => m.id);
+      
+      if (memberIds.length === 0) {
+        return res.json([]);
+      }
+
+      const teamRequests = await db.select().from(requests).where(
+        sql`${requests.userId} IN (${sql.join(memberIds.map(id => sql`${id}`), sql`, `)})`
+      ).orderBy(desc(requests.createdAt));
+
+      const result = teamRequests.map(request => {
+        const member = teamMembers.find(m => m.id === request.userId);
+        return {
+          ...request,
+          userName: member?.name || "Unknown",
+        };
+      });
+
+      res.json(result);
+    } catch (error) {
+      console.error("Manager requests error:", error);
+      res.status(500).json({ error: "Failed to fetch requests" });
+    }
+  });
+
+  app.put("/api/requests/:id/status", authenticate, requireRole("manager", "admin"), async (req, res) => {
+    try {
+      const { status } = req.body;
+      if (!["approved", "rejected"].includes(status)) {
+        return res.status(400).json({ error: "Invalid status" });
+      }
+
+      const [updated] = await db.update(requests)
+        .set({ 
+          status, 
+          reviewedBy: req.user!.id,
+          updatedAt: new Date(),
+        })
+        .where(eq(requests.id, req.params.id))
+        .returning();
+
+      if (!updated) {
+        return res.status(404).json({ error: "Request not found" });
+      }
+
+      res.json(updated);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update request status" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

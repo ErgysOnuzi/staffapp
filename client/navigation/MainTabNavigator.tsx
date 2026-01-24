@@ -8,19 +8,29 @@ import HomeStackNavigator from "@/navigation/HomeStackNavigator";
 import ScheduleStackNavigator from "@/navigation/ScheduleStackNavigator";
 import RequestsStackNavigator from "@/navigation/RequestsStackNavigator";
 import ProfileStackNavigator from "@/navigation/ProfileStackNavigator";
+import UsersStackNavigator from "@/navigation/UsersStackNavigator";
+import TeamStackNavigator from "@/navigation/TeamStackNavigator";
 import { useTheme } from "@/hooks/useTheme";
+import { useAuth } from "@/context/AuthContext";
 
 export type MainTabParamList = {
   HomeTab: undefined;
   ScheduleTab: undefined;
   RequestsTab: undefined;
   ProfileTab: undefined;
+  UsersTab: undefined;
+  TeamTab: undefined;
 };
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
 export default function MainTabNavigator() {
   const { theme, isDark } = useTheme();
+  const { user } = useAuth();
+
+  const isAdmin = user?.role === "admin";
+  const isManager = user?.role === "manager";
+  const isStaff = user?.role === "staff";
 
   return (
     <Tab.Navigator
@@ -58,16 +68,46 @@ export default function MainTabNavigator() {
           ),
         }}
       />
-      <Tab.Screen
-        name="ScheduleTab"
-        component={ScheduleStackNavigator}
-        options={{
-          title: "Schedule",
-          tabBarIcon: ({ color, size }) => (
-            <Feather name="calendar" size={size} color={color} />
-          ),
-        }}
-      />
+
+      {isAdmin ? (
+        <Tab.Screen
+          name="UsersTab"
+          component={UsersStackNavigator}
+          options={{
+            title: "Users",
+            tabBarIcon: ({ color, size }) => (
+              <Feather name="users" size={size} color={color} />
+            ),
+          }}
+        />
+      ) : null}
+
+      {isManager ? (
+        <Tab.Screen
+          name="TeamTab"
+          component={TeamStackNavigator}
+          options={{
+            title: "Team",
+            tabBarIcon: ({ color, size }) => (
+              <Feather name="users" size={size} color={color} />
+            ),
+          }}
+        />
+      ) : null}
+
+      {isStaff ? (
+        <Tab.Screen
+          name="ScheduleTab"
+          component={ScheduleStackNavigator}
+          options={{
+            title: "Schedule",
+            tabBarIcon: ({ color, size }) => (
+              <Feather name="calendar" size={size} color={color} />
+            ),
+          }}
+        />
+      ) : null}
+
       <Tab.Screen
         name="RequestsTab"
         component={RequestsStackNavigator}
@@ -78,6 +118,7 @@ export default function MainTabNavigator() {
           ),
         }}
       />
+
       <Tab.Screen
         name="ProfileTab"
         component={ProfileStackNavigator}
