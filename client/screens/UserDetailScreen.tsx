@@ -23,12 +23,14 @@ import { Spacing, BorderRadius, SemanticColors } from "@/constants/theme";
 import { apiRequest } from "@/lib/query-client";
 import { UsersStackParamList } from "@/navigation/UsersStackNavigator";
 
+type UserRole = "owner" | "admin" | "cfo" | "hr_admin" | "manager" | "supervisor" | "staff";
+
 interface User {
   id: string;
   name: string;
   email: string;
   phone?: string;
-  role: "staff" | "manager" | "admin";
+  role: UserRole;
   standing: "all_good" | "good" | "at_risk";
   hourlyRate?: string;
   holidayRate?: string;
@@ -36,6 +38,8 @@ interface User {
   marketId?: string;
   createdAt: string;
 }
+
+const allRoles: UserRole[] = ["owner", "admin", "cfo", "hr_admin", "manager", "supervisor", "staff"];
 
 interface Market {
   id: string;
@@ -122,7 +126,7 @@ export default function UserDetailScreen() {
 
   const confirmRoleChange = () => {
     if (pendingRole) {
-      setEditData({ ...editData, role: pendingRole as "staff" | "manager" | "admin" });
+      setEditData({ ...editData, role: pendingRole as UserRole });
       setShowRoleConfirm(false);
       setPendingRole(null);
     }
@@ -139,16 +143,24 @@ export default function UserDetailScreen() {
 
   const getRoleColor = (role: string) => {
     switch (role) {
+      case "owner": return "#6B21A8";
       case "admin": return SemanticColors.error;
+      case "cfo": return "#059669";
+      case "hr_admin": return "#7C3AED";
       case "manager": return SemanticColors.warning;
+      case "supervisor": return "#0891B2";
       default: return SemanticColors.info;
     }
   };
 
   const getRoleLabel = (role: string) => {
     switch (role) {
+      case "owner": return "Owner";
       case "admin": return "Admin";
+      case "cfo": return "CFO";
+      case "hr_admin": return "HR Admin";
       case "manager": return "Manager";
+      case "supervisor": return "Supervisor";
       default: return "Staff";
     }
   };
@@ -240,30 +252,32 @@ export default function UserDetailScreen() {
                 <ThemedText type="small" style={{ color: theme.textSecondary, marginBottom: Spacing.xs }}>
                   Role
                 </ThemedText>
-                <View style={styles.roleButtons}>
-                  {["staff", "manager", "admin"].map((role) => (
-                    <Pressable
-                      key={role}
-                      style={[
-                        styles.roleButton,
-                        { 
-                          backgroundColor: displayData.role === role ? getRoleColor(role) : theme.backgroundSecondary,
-                        },
-                      ]}
-                      onPress={() => handleRoleChange(role)}
-                    >
-                      <ThemedText
-                        type="small"
-                        style={{ 
-                          color: displayData.role === role ? "#FFFFFF" : theme.text,
-                          fontWeight: "600",
-                        }}
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  <View style={styles.roleButtons}>
+                    {allRoles.map((role) => (
+                      <Pressable
+                        key={role}
+                        style={[
+                          styles.roleButton,
+                          { 
+                            backgroundColor: displayData.role === role ? getRoleColor(role) : theme.backgroundSecondary,
+                          },
+                        ]}
+                        onPress={() => handleRoleChange(role)}
                       >
-                        {getRoleLabel(role)}
-                      </ThemedText>
-                    </Pressable>
-                  ))}
-                </View>
+                        <ThemedText
+                          type="small"
+                          style={{ 
+                            color: displayData.role === role ? "#FFFFFF" : theme.text,
+                            fontWeight: "600",
+                          }}
+                        >
+                          {getRoleLabel(role)}
+                        </ThemedText>
+                      </Pressable>
+                    ))}
+                  </View>
+                </ScrollView>
               </View>
 
               <View style={styles.inputGroup}>

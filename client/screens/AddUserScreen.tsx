@@ -38,12 +38,14 @@ export default function AddUserScreen() {
   const navigation = useNavigation<AddUserNavigationProp>();
   const queryClient = useQueryClient();
 
+  type UserRole = "owner" | "admin" | "cfo" | "hr_admin" | "manager" | "supervisor" | "staff";
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     password: "",
     phone: "",
-    role: "staff" as "staff" | "manager" | "admin",
+    role: "staff" as UserRole,
     hourlyRate: "15.00",
     holidayRate: "22.50",
     marketId: undefined as string | undefined,
@@ -96,19 +98,29 @@ export default function AddUserScreen() {
 
   const getRoleColor = (role: string) => {
     switch (role) {
+      case "owner": return "#6B21A8";
       case "admin": return SemanticColors.error;
+      case "cfo": return "#059669";
+      case "hr_admin": return "#7C3AED";
       case "manager": return SemanticColors.warning;
+      case "supervisor": return "#0891B2";
       default: return SemanticColors.info;
     }
   };
 
   const getRoleLabel = (role: string) => {
     switch (role) {
+      case "owner": return "Owner";
       case "admin": return "Admin";
+      case "cfo": return "CFO";
+      case "hr_admin": return "HR Admin";
       case "manager": return "Manager";
+      case "supervisor": return "Supervisor";
       default: return "Staff";
     }
   };
+
+  const allRoles: UserRole[] = ["owner", "admin", "cfo", "hr_admin", "manager", "supervisor", "staff"];
 
   return (
     <KeyboardAvoidingView
@@ -242,31 +254,32 @@ export default function AddUserScreen() {
               <ThemedText type="small" style={styles.label}>
                 Role
               </ThemedText>
-              <View style={styles.roleButtons}>
-                {(["staff", "manager", "admin"] as const).map((role) => (
-                  <Pressable
-                    key={role}
-                    style={[
-                      styles.roleButton,
-                      { 
-                        backgroundColor: formData.role === role ? getRoleColor(role) : theme.backgroundSecondary,
-                        flex: 1,
-                      },
-                    ]}
-                    onPress={() => setFormData({ ...formData, role })}
-                  >
-                    <ThemedText
-                      type="small"
-                      style={{ 
-                        color: formData.role === role ? "#FFFFFF" : theme.text,
-                        fontWeight: "600",
-                      }}
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                <View style={styles.roleButtons}>
+                  {allRoles.map((role) => (
+                    <Pressable
+                      key={role}
+                      style={[
+                        styles.roleButton,
+                        { 
+                          backgroundColor: formData.role === role ? getRoleColor(role) : theme.backgroundSecondary,
+                        },
+                      ]}
+                      onPress={() => setFormData({ ...formData, role })}
                     >
-                      {getRoleLabel(role)}
-                    </ThemedText>
-                  </Pressable>
-                ))}
-              </View>
+                      <ThemedText
+                        type="small"
+                        style={{ 
+                          color: formData.role === role ? "#FFFFFF" : theme.text,
+                          fontWeight: "600",
+                        }}
+                      >
+                        {getRoleLabel(role)}
+                      </ThemedText>
+                    </Pressable>
+                  ))}
+                </View>
+              </ScrollView>
             </View>
 
             <View style={styles.row}>

@@ -28,9 +28,11 @@ export default function MainTabNavigator() {
   const { theme, isDark } = useTheme();
   const { user } = useAuth();
 
-  const isAdmin = user?.role === "admin";
-  const isManager = user?.role === "manager";
+  // Role groups for navigation
+  const canManageUsers = ["owner", "admin", "hr_admin"].includes(user?.role || "");
+  const canManageTeam = ["manager", "supervisor"].includes(user?.role || "");
   const isStaff = user?.role === "staff";
+  const isCFO = user?.role === "cfo";
 
   return (
     <Tab.Navigator
@@ -69,7 +71,7 @@ export default function MainTabNavigator() {
         }}
       />
 
-      {isAdmin ? (
+      {canManageUsers ? (
         <Tab.Screen
           name="UsersTab"
           component={UsersStackNavigator}
@@ -82,7 +84,7 @@ export default function MainTabNavigator() {
         />
       ) : null}
 
-      {isManager ? (
+      {canManageTeam ? (
         <Tab.Screen
           name="TeamTab"
           component={TeamStackNavigator}
@@ -95,7 +97,7 @@ export default function MainTabNavigator() {
         />
       ) : null}
 
-      {isStaff ? (
+      {isStaff || isCFO ? (
         <Tab.Screen
           name="ScheduleTab"
           component={ScheduleStackNavigator}
