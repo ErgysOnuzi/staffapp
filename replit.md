@@ -49,8 +49,12 @@ StaffHub is a comprehensive staff management mobile application built with Expo 
 
 | Role | Email | Password | Company Code |
 |------|-------|----------|--------------|
+| Owner | owner@demo.com | password123 | DEMO |
 | Admin | admin@demo.com | password123 | DEMO |
+| CFO | cfo@demo.com | password123 | DEMO |
+| HR Admin | hr@demo.com | password123 | DEMO |
 | Manager | manager@demo.com | password123 | DEMO |
+| Supervisor | supervisor@demo.com | password123 | DEMO |
 | Staff | staff@demo.com | password123 | DEMO |
 | Staff (2) | worker@demo.com | password123 | DEMO |
 
