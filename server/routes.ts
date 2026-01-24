@@ -9,7 +9,10 @@ import {
   insertSOSSchema, insertCashRegisterSchema, insertMarketSchema
 } from "../shared/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
-import { authenticate, requireRole, hashPassword, verifyPassword, createSession, destroySession } from "./auth";
+import { 
+  authenticate, requireRole, hashPassword, verifyPassword, createSession, destroySession,
+  USER_MANAGEMENT_ROLES, FINANCIAL_ROLES, EXECUTIVE_ROLES, TEAM_MANAGEMENT_ROLES, hasHigherOrEqualRole
+} from "./auth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
 
@@ -144,7 +147,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/users", authenticate, requireRole("admin", "manager"), async (req, res) => {
+  app.get("/api/users", authenticate, requireRole(...TEAM_MANAGEMENT_ROLES), async (req, res) => {
     try {
       const companyId = req.user!.companyId;
       let query = db.select().from(users).where(eq(users.companyId, companyId));
@@ -182,7 +185,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/users/:id", authenticate, requireRole("admin"), async (req, res) => {
+  app.put("/api/users/:id", authenticate, requireRole(...USER_MANAGEMENT_ROLES), async (req, res) => {
     try {
       const { id } = req.params;
       const updates = req.body;
@@ -203,7 +206,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/users/:id", authenticate, requireRole("admin"), async (req, res) => {
+  app.delete("/api/users/:id", authenticate, requireRole(...USER_MANAGEMENT_ROLES), async (req, res) => {
     try {
       await db.delete(users).where(
         and(eq(users.id, req.params.id), eq(users.companyId, req.user!.companyId))
@@ -214,7 +217,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/staff", authenticate, requireRole("admin", "manager"), async (req, res) => {
+  app.get("/api/staff", authenticate, requireRole(...TEAM_MANAGEMENT_ROLES), async (req, res) => {
     try {
       const companyId = req.user!.companyId;
       let query;
@@ -236,7 +239,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/staff/:id/status", authenticate, requireRole("admin", "manager"), async (req, res) => {
+  app.patch("/api/staff/:id/status", authenticate, requireRole(...TEAM_MANAGEMENT_ROLES), async (req, res) => {
     try {
       const { standing } = req.body;
       const [updated] = await db.update(users)
@@ -274,7 +277,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/schedules", authenticate, requireRole("admin", "manager"), async (req, res) => {
+  app.post("/api/schedules", authenticate, requireRole(...TEAM_MANAGEMENT_ROLES), async (req, res) => {
     try {
       const data = insertScheduleSchema.parse(req.body);
       const [schedule] = await db.insert(schedules).values(data).returning();
@@ -334,7 +337,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/requests/:id/status", authenticate, requireRole("admin", "manager"), async (req, res) => {
+  app.patch("/api/requests/:id/status", authenticate, requireRole(...TEAM_MANAGEMENT_ROLES), async (req, res) => {
     try {
       const { status } = req.body;
       const [updated] = await db.update(requests)
@@ -377,7 +380,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/salary/staff/:id", authenticate, requireRole("admin", "manager"), async (req, res) => {
+  app.get("/api/salary/staff/:id", authenticate, requireRole(...FINANCIAL_ROLES, "manager", "supervisor"), async (req, res) => {
     try {
       const [user] = await db.select().from(users).where(
         and(eq(users.id, req.params.id), eq(users.companyId, req.user!.companyId))
@@ -399,7 +402,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/salary/payments", authenticate, requireRole("admin"), async (req, res) => {
+  app.post("/api/salary/payments", authenticate, requireRole(...FINANCIAL_ROLES), async (req, res) => {
     try {
       const { userId, amount, period } = req.body;
       
@@ -436,7 +439,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/contracts/:id", authenticate, requireRole("admin"), async (req, res) => {
+  app.put("/api/contracts/:id", authenticate, requireRole(...USER_MANAGEMENT_ROLES), async (req, res) => {
     try {
       const [updated] = await db.update(contracts)
         .set({ ...req.body, updatedAt: new Date() })
@@ -471,7 +474,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/warnings", authenticate, requireRole("admin", "manager"), async (req, res) => {
+  app.post("/api/warnings", authenticate, requireRole(...TEAM_MANAGEMENT_ROLES), async (req, res) => {
     try {
       const data = {
         ...req.body,
@@ -603,7 +606,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/admin-dashboard", authenticate, requireRole("admin"), async (req, res) => {
+  app.get("/api/admin-dashboard", authenticate, requireRole(...EXECUTIVE_ROLES), async (req, res) => {
     try {
       const companyId = req.user!.companyId;
       
@@ -632,15 +635,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/admin/system-logs", authenticate, requireRole("admin"), async (req, res) => {
+  app.get("/api/admin/system-logs", authenticate, requireRole("owner", "admin"), async (req, res) => {
     res.json({ logs: [] });
   });
 
-  app.get("/api/admin/settings", authenticate, requireRole("admin"), async (req, res) => {
+  app.get("/api/admin/settings", authenticate, requireRole("owner", "admin"), async (req, res) => {
     res.json({ defaultHourlyRate: 15, defaultHolidayRate: 22.5 });
   });
 
-  app.put("/api/admin/settings", authenticate, requireRole("admin"), async (req, res) => {
+  app.put("/api/admin/settings", authenticate, requireRole("owner", "admin"), async (req, res) => {
     res.json({ success: true });
   });
 
@@ -653,7 +656,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/markets", authenticate, requireRole("admin"), async (req, res) => {
+  app.post("/api/markets", authenticate, requireRole(...USER_MANAGEMENT_ROLES), async (req, res) => {
     try {
       const [market] = await db.insert(markets).values({
         ...req.body,
@@ -665,7 +668,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/companies", authenticate, requireRole("admin"), async (req, res) => {
+  app.get("/api/companies", authenticate, requireRole(...EXECUTIVE_ROLES), async (req, res) => {
     try {
       const [company] = await db.select().from(companies).where(eq(companies.id, req.user!.companyId)).limit(1);
       res.json(company);
@@ -674,7 +677,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/admin/users", authenticate, requireRole("admin"), async (req, res) => {
+  app.get("/api/admin/users", authenticate, requireRole(...USER_MANAGEMENT_ROLES), async (req, res) => {
     try {
       const allUsers = await db.select({
         id: users.id,
@@ -695,7 +698,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/admin/users", authenticate, requireRole("admin"), async (req, res) => {
+  app.post("/api/admin/users", authenticate, requireRole(...USER_MANAGEMENT_ROLES), async (req, res) => {
     try {
       const { email, password, name, phone, role = "staff", hourlyRate, holidayRate, marketId } = req.body;
       
@@ -730,7 +733,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/admin/company-stats", authenticate, requireRole("admin"), async (req, res) => {
+  app.get("/api/admin/company-stats", authenticate, requireRole(...EXECUTIVE_ROLES), async (req, res) => {
     try {
       const companyId = req.user!.companyId;
       
@@ -758,7 +761,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/admin/markets", authenticate, requireRole("admin"), async (req, res) => {
+  app.get("/api/admin/markets", authenticate, requireRole(...EXECUTIVE_ROLES), async (req, res) => {
     try {
       const companyId = req.user!.companyId;
       const allMarkets = await db.select().from(markets).where(eq(markets.companyId, companyId));
@@ -775,7 +778,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/markets/:id", authenticate, requireRole("admin"), async (req, res) => {
+  app.put("/api/markets/:id", authenticate, requireRole(...USER_MANAGEMENT_ROLES), async (req, res) => {
     try {
       const { name, address } = req.body;
       const [updated] = await db.update(markets)
@@ -793,7 +796,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/markets/:id", authenticate, requireRole("admin"), async (req, res) => {
+  app.delete("/api/markets/:id", authenticate, requireRole(...USER_MANAGEMENT_ROLES), async (req, res) => {
     try {
       await db.update(users)
         .set({ marketId: null })
@@ -809,7 +812,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/companies", authenticate, requireRole("admin"), async (req, res) => {
+  app.put("/api/companies", authenticate, requireRole("owner", "admin"), async (req, res) => {
     try {
       const { name, address } = req.body;
       const [updated] = await db.update(companies)
@@ -823,7 +826,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/manager/team", authenticate, requireRole("manager", "admin"), async (req, res) => {
+  app.get("/api/manager/team", authenticate, requireRole(...TEAM_MANAGEMENT_ROLES), async (req, res) => {
     try {
       const today = new Date().toISOString().split("T")[0];
       
@@ -863,7 +866,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/manager/requests", authenticate, requireRole("manager", "admin"), async (req, res) => {
+  app.get("/api/manager/requests", authenticate, requireRole(...TEAM_MANAGEMENT_ROLES), async (req, res) => {
     try {
       const teamMembers = await db.select({ id: users.id, name: users.name }).from(users).where(
         and(
@@ -897,7 +900,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/requests/:id/status", authenticate, requireRole("manager", "admin"), async (req, res) => {
+  app.put("/api/requests/:id/status", authenticate, requireRole(...TEAM_MANAGEMENT_ROLES), async (req, res) => {
     try {
       const { status } = req.body;
       if (!["approved", "rejected"].includes(status)) {
