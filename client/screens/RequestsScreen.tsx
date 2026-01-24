@@ -1,18 +1,19 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useCallback } from "react";
 import {
   View,
   StyleSheet,
   FlatList,
-  RefreshControl,
   Pressable,
+  RefreshControl,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Feather } from "@expo/vector-icons";
 import Animated, { FadeInDown } from "react-native-reanimated";
+import { useQuery, useMutation } from "@tanstack/react-query";
 
 import { ThemedText } from "@/components/ThemedText";
 import { Card } from "@/components/Card";
@@ -20,13 +21,27 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { EmptyState } from "@/components/EmptyState";
 import { SOSButton } from "@/components/SOSButton";
 import { useTheme } from "@/hooks/useTheme";
-import { storage, Request } from "@/lib/storage";
+import { useAuth } from "@/context/AuthContext";
 import { Spacing, SemanticColors, BorderRadius } from "@/constants/theme";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
+import { apiRequest, queryClient } from "@/lib/query-client";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
-type TabType = "all" | "pending" | "approved" | "declined";
+interface Request {
+  id: string;
+  userId: string;
+  type: "request" | "report";
+  subject: string;
+  details: string;
+  status: "pending" | "approved" | "declined";
+  isAnonymous: boolean;
+  reviewedBy?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+type FilterType = "all" | "pending" | "approved" | "declined";
 
 export default function RequestsScreen() {
   const insets = useSafeAreaInsets();
@@ -34,23 +49,33 @@ export default function RequestsScreen() {
   const tabBarHeight = useBottomTabBarHeight();
   const navigation = useNavigation<NavigationProp>();
   const { theme } = useTheme();
+  const { user } = useAuth();
 
-  const [requests, setRequests] = useState<Request[]>([]);
+  const [filter, setFilter] = useState<FilterType>("all");
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [activeTab, setActiveTab] = useState<TabType>("all");
 
-  const loadData = useCallback(async () => {
-    const data = await storage.getRequests();
-    setRequests(data);
-  }, []);
+  const { data: requests = [], refetch, isLoading } = useQuery<Request[]>({
+    queryKey: ["/api/requests"],
+  });
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  const updateStatusMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      await apiRequest("PATCH", `/api/requests/${id}/status`, { status });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/requests"] });
+    },
+  });
+
+  useFocusEffect(
+    useCallback(() => {
+      refetch();
+    }, [])
+  );
 
   const onRefresh = async () => {
     setIsRefreshing(true);
-    await loadData();
+    await refetch();
     setIsRefreshing(false);
   };
 
@@ -62,10 +87,24 @@ export default function RequestsScreen() {
     navigation.navigate("SubmitRequest");
   };
 
+  const handleApprove = (id: string) => {
+    updateStatusMutation.mutate({ id, status: "approved" });
+  };
+
+  const handleDecline = (id: string) => {
+    updateStatusMutation.mutate({ id, status: "declined" });
+  };
+
   const filteredRequests = requests.filter((req) => {
-    if (activeTab === "all") return true;
-    return req.status === activeTab;
+    if (filter === "all") return true;
+    return req.status === filter;
   });
+
+  const sortedRequests = [...filteredRequests].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
+
+  const canManageRequests = user?.role === "admin" || user?.role === "manager";
 
   const getStatusVariant = (status: string) => {
     switch (status) {
@@ -73,7 +112,6 @@ export default function RequestsScreen() {
         return "success";
       case "declined":
         return "error";
-      case "pending":
       default:
         return "pending";
     }
@@ -81,70 +119,67 @@ export default function RequestsScreen() {
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-
-    if (days === 0) return "Today";
-    if (days === 1) return "Yesterday";
-    if (days < 7) return `${days} days ago`;
-    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
   };
 
   const renderRequest = ({ item, index }: { item: Request; index: number }) => (
     <Animated.View entering={FadeInDown.duration(300).delay(index * 50)}>
       <Card elevation={1} style={styles.requestCard}>
         <View style={styles.requestHeader}>
-          <View
-            style={[
-              styles.typeIcon,
-              {
-                backgroundColor:
-                  item.type === "report"
-                    ? SemanticColors.warning + "20"
-                    : theme.link + "20",
-              },
-            ]}
-          >
+          <View style={styles.requestType}>
             <Feather
-              name={item.type === "report" ? "flag" : "file-text"}
-              size={18}
-              color={item.type === "report" ? SemanticColors.warning : theme.link}
+              name={item.type === "request" ? "file-text" : "alert-circle"}
+              size={16}
+              color={item.type === "request" ? theme.link : SemanticColors.warning}
             />
-          </View>
-          <View style={styles.requestInfo}>
-            <ThemedText type="body" style={{ fontWeight: "600" }}>
-              {item.subject}
-            </ThemedText>
-            <ThemedText type="caption" style={{ color: theme.textSecondary }}>
-              {formatDate(item.createdAt)}
+            <ThemedText type="caption" style={{ marginLeft: Spacing.xxs, textTransform: "uppercase" }}>
+              {item.type}
             </ThemedText>
           </View>
           <StatusBadge
+            status={getStatusVariant(item.status) as any}
             label={item.status.charAt(0).toUpperCase() + item.status.slice(1)}
-            variant={getStatusVariant(item.status)}
           />
         </View>
-        <ThemedText
-          type="small"
-          style={[styles.requestDetails, { color: theme.textSecondary }]}
-          numberOfLines={2}
-        >
+
+        <ThemedText type="body" style={{ fontWeight: "600", marginBottom: Spacing.xs }}>
+          {item.subject}
+        </ThemedText>
+        <ThemedText type="small" style={{ color: theme.textSecondary }} numberOfLines={2}>
           {item.details}
         </ThemedText>
-        {item.isAnonymous ? (
-          <View style={styles.anonymousBadge}>
-            <Feather name="eye-off" size={12} color={theme.textSecondary} />
-            <ThemedText type="caption" style={{ color: theme.textSecondary }}>
-              Anonymous
-            </ThemedText>
-          </View>
-        ) : null}
+
+        <View style={styles.requestFooter}>
+          <ThemedText type="caption" style={{ color: theme.textSecondary }}>
+            {formatDate(item.createdAt)}
+          </ThemedText>
+          
+          {canManageRequests && item.status === "pending" && item.userId !== user?.id ? (
+            <View style={styles.actionButtons}>
+              <Pressable
+                style={[styles.actionButton, { backgroundColor: SemanticColors.success + "20" }]}
+                onPress={() => handleApprove(item.id)}
+              >
+                <Feather name="check" size={16} color={SemanticColors.success} />
+              </Pressable>
+              <Pressable
+                style={[styles.actionButton, { backgroundColor: SemanticColors.error + "20" }]}
+                onPress={() => handleDecline(item.id)}
+              >
+                <Feather name="x" size={16} color={SemanticColors.error} />
+              </Pressable>
+            </View>
+          ) : null}
+        </View>
       </Card>
     </Animated.View>
   );
 
-  const tabs: { key: TabType; label: string }[] = [
+  const filters: { key: FilterType; label: string }[] = [
     { key: "all", label: "All" },
     { key: "pending", label: "Pending" },
     { key: "approved", label: "Approved" },
@@ -153,54 +188,46 @@ export default function RequestsScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.backgroundRoot }]}>
-      <View
-        style={[
-          styles.tabsContainer,
-          {
-            paddingTop: headerHeight + Spacing.md,
-            backgroundColor: theme.backgroundRoot,
-          },
-        ]}
-      >
-        <View style={styles.tabsRow}>
-          {tabs.map((tab) => {
-            const isActive = activeTab === tab.key;
-            return (
-              <Pressable
-                key={tab.key}
-                style={[
-                  styles.tab,
-                  isActive && { backgroundColor: theme.link },
-                ]}
-                onPress={() => setActiveTab(tab.key)}
+      <View style={[styles.header, { paddingTop: headerHeight + Spacing.md }]}>
+        <View style={styles.filterRow}>
+          {filters.map((f) => (
+            <Pressable
+              key={f.key}
+              style={[
+                styles.filterButton,
+                filter === f.key && { backgroundColor: theme.link },
+              ]}
+              onPress={() => setFilter(f.key)}
+            >
+              <ThemedText
+                type="small"
+                style={{ color: filter === f.key ? "#FFF" : theme.textPrimary }}
               >
-                <ThemedText
-                  type="small"
-                  style={[
-                    styles.tabLabel,
-                    { color: isActive ? "#FFF" : theme.textSecondary },
-                  ]}
-                >
-                  {tab.label}
-                </ThemedText>
-              </Pressable>
-            );
-          })}
+                {f.label}
+              </ThemedText>
+            </Pressable>
+          ))}
         </View>
+
+        <Pressable
+          style={[styles.newButton, { backgroundColor: theme.link }]}
+          onPress={handleNewRequest}
+        >
+          <Feather name="plus" size={20} color="#FFF" />
+          <ThemedText type="body" style={{ color: "#FFF", marginLeft: Spacing.xs }}>
+            New Request
+          </ThemedText>
+        </Pressable>
       </View>
 
       <FlatList
-        style={styles.list}
-        contentContainerStyle={{
-          paddingTop: Spacing.lg,
-          paddingBottom: tabBarHeight + Spacing["5xl"],
-          paddingHorizontal: Spacing.lg,
-          flexGrow: 1,
-        }}
-        scrollIndicatorInsets={{ bottom: insets.bottom }}
-        data={filteredRequests}
+        data={sortedRequests}
         keyExtractor={(item) => item.id}
         renderItem={renderRequest}
+        contentContainerStyle={[
+          styles.listContent,
+          { paddingBottom: tabBarHeight + Spacing.xl },
+        ]}
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
@@ -212,26 +239,19 @@ export default function RequestsScreen() {
           <EmptyState
             icon="inbox"
             title="No Requests"
-            message={
-              activeTab === "all"
-                ? "You haven't submitted any requests yet."
-                : `No ${activeTab} requests.`
-            }
+            message="You haven't submitted any requests yet."
             actionLabel="Submit Request"
             onAction={handleNewRequest}
           />
         }
+        ListFooterComponent={
+          sortedRequests.length > 0 ? (
+            <View style={styles.sosContainer}>
+              <SOSButton onPress={handleSOS} />
+            </View>
+          ) : null
+        }
       />
-
-      <Pressable
-        style={[styles.fab, { backgroundColor: theme.link }]}
-        onPress={handleNewRequest}
-        testID="button-new-request"
-      >
-        <Feather name="plus" size={24} color="#FFF" />
-      </Pressable>
-
-      <SOSButton onPress={handleSOS} />
     </View>
   );
 }
@@ -240,66 +260,70 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  tabsContainer: {
+  header: {
     paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing.md,
   },
-  tabsRow: {
+  filterRow: {
     flexDirection: "row",
-    gap: Spacing.sm,
+    backgroundColor: "rgba(0,0,0,0.05)",
+    borderRadius: BorderRadius.md,
+    padding: 4,
+    marginBottom: Spacing.md,
   },
-  tab: {
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.full,
-  },
-  tabLabel: {
-    fontWeight: "600",
-  },
-  list: {
+  filterButton: {
     flex: 1,
+    paddingVertical: Spacing.sm,
+    alignItems: "center",
+    borderRadius: BorderRadius.sm,
+  },
+  newButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    borderRadius: BorderRadius.md,
+  },
+  listContent: {
+    paddingHorizontal: Spacing.lg,
   },
   requestCard: {
     marginBottom: Spacing.md,
   },
   requestHeader: {
     flexDirection: "row",
-    alignItems: "flex-start",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: Spacing.sm,
   },
-  typeIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: Spacing.md,
-  },
-  requestInfo: {
-    flex: 1,
-  },
-  requestDetails: {
-    marginTop: Spacing.sm,
-  },
-  anonymousBadge: {
+  requestType: {
     flexDirection: "row",
     alignItems: "center",
-    gap: Spacing.xs,
-    marginTop: Spacing.sm,
   },
-  fab: {
-    position: "absolute",
-    right: Spacing.lg,
-    bottom: 140,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+  requestFooter: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: Spacing.md,
+    paddingTop: Spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(0,0,0,0.05)",
+  },
+  actionButtons: {
+    flexDirection: "row",
+    gap: Spacing.sm,
+  },
+  actionButton: {
+    width: 32,
+    height: 32,
+    borderRadius: BorderRadius.round,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 6,
+  },
+  sosContainer: {
+    alignItems: "center",
+    marginTop: Spacing.xl,
+    marginBottom: Spacing.lg,
   },
 });

@@ -1,5 +1,29 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { storage, User } from "@/lib/storage";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { getApiUrl, setAuthToken, clearAuthToken, getAuthToken, queryClient } from "@/lib/query-client";
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  role: "staff" | "manager" | "admin";
+  standing: "all_good" | "good" | "at_risk";
+  marketId?: string;
+  accumulatedSalary?: string;
+  hourlyRate?: string;
+  holidayRate?: string;
+  theme?: string;
+  accentColor?: string;
+  language?: string;
+  contract?: {
+    id: string;
+    startDate: string;
+    endDate: string;
+    isActive: boolean;
+  };
+  createdAt: string;
+}
 
 interface AuthContextType {
   user: User | null;
@@ -8,9 +32,11 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
   updateUser: (updates: Partial<User>) => Promise<void>;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const USER_STORAGE_KEY = "@staffhub:user";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -22,8 +48,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loadUser = async () => {
     try {
-      const savedUser = await storage.getUser();
-      setUser(savedUser);
+      const token = await getAuthToken();
+      if (token) {
+        const baseUrl = getApiUrl();
+        const res = await fetch(`${baseUrl}api/auth/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        
+        if (res.ok) {
+          const data = await res.json();
+          setUser(data.user);
+          await AsyncStorage.setItem(USER_STORAGE_KEY, JSON.stringify(data.user));
+        } else {
+          await clearAuthToken();
+          await AsyncStorage.removeItem(USER_STORAGE_KEY);
+        }
+      } else {
+        const savedUser = await AsyncStorage.getItem(USER_STORAGE_KEY);
+        if (savedUser) {
+          setUser(JSON.parse(savedUser));
+        }
+      }
     } catch (error) {
       console.error("Failed to load user:", error);
     } finally {
@@ -33,24 +78,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      const mockUser: User = {
-        id: "user_1",
-        name: "John Smith",
-        email: email.toLowerCase(),
-        phone: "+1 234 567 8900",
-        role: "staff",
-        standing: "all_good",
-        accumulatedSalary: 1250.50,
-        hourlyRate: 15.00,
-        holidayRate: 22.50,
-        contractEndDate: "2026-06-30",
-        createdAt: new Date().toISOString(),
-      };
+      const baseUrl = getApiUrl();
+      const res = await fetch(`${baseUrl}api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.toLowerCase(), password }),
+      });
 
-      await storage.setUser(mockUser);
-      setUser(mockUser);
+      if (!res.ok) {
+        const error = await res.json();
+        console.error("Login error:", error);
+        return false;
+      }
 
-      await initializeMockData();
+      const data = await res.json();
+      await setAuthToken(data.token);
+      await AsyncStorage.setItem(USER_STORAGE_KEY, JSON.stringify(data.user));
+      setUser(data.user);
+      queryClient.clear();
       return true;
     } catch (error) {
       console.error("Login failed:", error);
@@ -58,102 +103,67 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const initializeMockData = async () => {
-    const today = new Date();
-    const mockSchedule = [
-      {
-        id: "shift_1",
-        userId: "user_1",
-        date: today.toISOString().split("T")[0],
-        startTime: "09:00",
-        endTime: "17:00",
-        breakStart: "12:00",
-        breakEnd: "12:30",
-        position: "Cashier",
-      },
-      {
-        id: "shift_2",
-        userId: "user_1",
-        date: new Date(today.getTime() + 86400000).toISOString().split("T")[0],
-        startTime: "10:00",
-        endTime: "18:00",
-        breakStart: "13:00",
-        breakEnd: "13:30",
-        position: "Floor Staff",
-      },
-      {
-        id: "shift_3",
-        userId: "user_1",
-        date: new Date(today.getTime() + 86400000 * 2).toISOString().split("T")[0],
-        startTime: "08:00",
-        endTime: "16:00",
-        breakStart: "11:30",
-        breakEnd: "12:00",
-        position: "Cashier",
-      },
-    ];
-
-    const mockRequests = [
-      {
-        id: "req_1",
-        userId: "user_1",
-        type: "request" as const,
-        subject: "Time Off Request",
-        details: "Requesting time off for personal matters on March 15th.",
-        status: "pending" as const,
-        isAnonymous: false,
-        createdAt: new Date(today.getTime() - 86400000 * 2).toISOString(),
-        updatedAt: new Date(today.getTime() - 86400000 * 2).toISOString(),
-      },
-      {
-        id: "req_2",
-        userId: "user_1",
-        type: "request" as const,
-        subject: "Shift Swap",
-        details: "Would like to swap my Tuesday shift with Maria.",
-        status: "approved" as const,
-        isAnonymous: false,
-        createdAt: new Date(today.getTime() - 86400000 * 5).toISOString(),
-        updatedAt: new Date(today.getTime() - 86400000 * 3).toISOString(),
-      },
-    ];
-
-    const mockNotifications = [
-      {
-        id: "notif_1",
-        userId: "user_1",
-        title: "Shift Reminder",
-        message: "Your shift starts in 1 hour.",
-        type: "general" as const,
-        isRead: false,
-        createdAt: new Date().toISOString(),
-      },
-      {
-        id: "notif_2",
-        userId: "user_1",
-        title: "Request Approved",
-        message: "Your shift swap request has been approved.",
-        type: "request" as const,
-        isRead: true,
-        createdAt: new Date(today.getTime() - 86400000 * 3).toISOString(),
-      },
-    ];
-
-    await storage.setSchedule(mockSchedule);
-    await storage.setRequests(mockRequests);
-    await storage.setNotifications(mockNotifications);
-  };
-
   const logout = async () => {
-    await storage.clearAll();
-    setUser(null);
+    try {
+      const baseUrl = getApiUrl();
+      const token = await getAuthToken();
+      if (token) {
+        await fetch(`${baseUrl}api/auth/logout`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      }
+    } catch (error) {
+      console.error("Logout error:", error);
+    } finally {
+      await clearAuthToken();
+      await AsyncStorage.removeItem(USER_STORAGE_KEY);
+      setUser(null);
+      queryClient.clear();
+    }
   };
 
   const updateUser = async (updates: Partial<User>) => {
-    if (user) {
-      const updatedUser = { ...user, ...updates };
-      await storage.setUser(updatedUser);
-      setUser(updatedUser);
+    try {
+      const baseUrl = getApiUrl();
+      const token = await getAuthToken();
+      
+      const res = await fetch(`${baseUrl}api/users/me`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(updates),
+      });
+
+      if (res.ok) {
+        const updatedUser = await res.json();
+        setUser(updatedUser);
+        await AsyncStorage.setItem(USER_STORAGE_KEY, JSON.stringify(updatedUser));
+      }
+    } catch (error) {
+      console.error("Update user failed:", error);
+    }
+  };
+
+  const refreshUser = async () => {
+    try {
+      const token = await getAuthToken();
+      if (token) {
+        const baseUrl = getApiUrl();
+        const res = await fetch(`${baseUrl}api/auth/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        
+        if (res.ok) {
+          const data = await res.json();
+          setUser(data.user);
+          await AsyncStorage.setItem(USER_STORAGE_KEY, JSON.stringify(data.user));
+        }
+      }
+    } catch (error) {
+      console.error("Refresh user failed:", error);
     }
   };
 
@@ -166,6 +176,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login,
         logout,
         updateUser,
+        refreshUser,
       }}
     >
       {children}

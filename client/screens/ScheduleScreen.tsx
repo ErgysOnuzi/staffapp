@@ -1,35 +1,47 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useCallback } from "react";
 import {
   View,
   StyleSheet,
   FlatList,
-  RefreshControl,
   Pressable,
+  RefreshControl,
+  ViewStyle,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Feather } from "@expo/vector-icons";
 import Animated, { FadeInDown } from "react-native-reanimated";
+import { useQuery } from "@tanstack/react-query";
 
 import { ThemedText } from "@/components/ThemedText";
 import { Card } from "@/components/Card";
 import { EmptyState } from "@/components/EmptyState";
 import { SOSButton } from "@/components/SOSButton";
 import { useTheme } from "@/hooks/useTheme";
-import { storage, ScheduleShift } from "@/lib/storage";
+import { useAuth } from "@/context/AuthContext";
 import { Spacing, SemanticColors, BorderRadius } from "@/constants/theme";
-import { useNavigation } from "@react-navigation/native";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
+interface ScheduleShift {
+  id: string;
+  userId: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  breakStart?: string;
+  breakEnd?: string;
+  position: string;
+}
+
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-const MONTHS = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December"
-];
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+type ViewMode = "week" | "month";
 
 export default function ScheduleScreen() {
   const insets = useSafeAreaInsets();
@@ -37,77 +49,67 @@ export default function ScheduleScreen() {
   const tabBarHeight = useBottomTabBarHeight();
   const navigation = useNavigation<NavigationProp>();
   const { theme } = useTheme();
+  const { user } = useAuth();
 
-  const [schedule, setSchedule] = useState<ScheduleShift[]>([]);
+  const [viewMode, setViewMode] = useState<ViewMode>("week");
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(new Date());
 
-  const loadData = useCallback(async () => {
-    const data = await storage.getSchedule();
-    setSchedule(data);
-  }, []);
+  const { data: schedules = [], refetch, isLoading } = useQuery<ScheduleShift[]>({
+    queryKey: ["/api/schedules"],
+  });
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  useFocusEffect(
+    useCallback(() => {
+      refetch();
+    }, [])
+  );
 
   const onRefresh = async () => {
     setIsRefreshing(true);
-    await loadData();
+    await refetch();
     setIsRefreshing(false);
-  };
-
-  const getWeekDates = () => {
-    const dates = [];
-    const today = new Date();
-    const startOfWeek = new Date(today);
-    startOfWeek.setDate(today.getDate() - today.getDay());
-
-    for (let i = 0; i < 7; i++) {
-      const date = new Date(startOfWeek);
-      date.setDate(startOfWeek.getDate() + i);
-      dates.push(date);
-    }
-    return dates;
-  };
-
-  const weekDates = getWeekDates();
-  const today = new Date().toISOString().split("T")[0];
-
-  const getShiftForDate = (date: Date) => {
-    const dateStr = date.toISOString().split("T")[0];
-    return schedule.find((s) => s.date === dateStr);
   };
 
   const handleSOS = () => {
     navigation.navigate("SOS");
   };
 
-  const formatDuration = (start: string, end: string) => {
+  const today = new Date().toISOString().split("T")[0];
+
+  const calculateHours = (start: string, end: string, breakStart?: string, breakEnd?: string) => {
     const [startH, startM] = start.split(":").map(Number);
     const [endH, endM] = end.split(":").map(Number);
-    const startMins = startH * 60 + startM;
-    const endMins = endH * 60 + endM;
-    const diff = endMins - startMins;
-    const hours = Math.floor(diff / 60);
-    const mins = diff % 60;
-    return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+    let totalMinutes = (endH * 60 + endM) - (startH * 60 + startM);
+
+    if (breakStart && breakEnd) {
+      const [breakStartH, breakStartM] = breakStart.split(":").map(Number);
+      const [breakEndH, breakEndM] = breakEnd.split(":").map(Number);
+      totalMinutes -= (breakEndH * 60 + breakEndM) - (breakStartH * 60 + breakStartM);
+    }
+
+    return (totalMinutes / 60).toFixed(1);
   };
 
-  const selectedDateStr = selectedDate.toISOString().split("T")[0];
-  const selectedShift = getShiftForDate(selectedDate);
+  const sortedSchedules = [...schedules].sort((a, b) => 
+    new Date(a.date).getTime() - new Date(b.date).getTime()
+  );
 
-  const upcomingShifts = schedule
-    .filter((s) => s.date >= today)
-    .sort((a, b) => a.date.localeCompare(b.date));
+  const upcomingSchedules = sortedSchedules.filter(s => {
+    const shiftDate = new Date(s.date).toISOString().split("T")[0];
+    return shiftDate >= today;
+  });
 
-  const renderShiftCard = ({ item, index }: { item: ScheduleShift; index: number }) => {
+  const todayCardStyle: ViewStyle = { borderWidth: 2, borderColor: SemanticColors.primary };
+  const shiftCardMarginStyle: ViewStyle = { marginBottom: Spacing.md };
+
+  const renderShift = ({ item, index }: { item: ScheduleShift; index: number }) => {
     const shiftDate = new Date(item.date);
-    const isToday = item.date === today;
+    const shiftDateStr = shiftDate.toISOString().split("T")[0];
+    const isToday = shiftDateStr === today;
 
     return (
       <Animated.View entering={FadeInDown.duration(300).delay(index * 50)}>
-        <Card elevation={1} style={[styles.shiftCard, isToday && styles.todayCard]}>
+        <Card elevation={1} style={[shiftCardMarginStyle, isToday ? todayCardStyle : undefined] as ViewStyle}>
           <View style={styles.shiftHeader}>
             <View>
               <ThemedText type="body" style={{ fontWeight: "600" }}>
@@ -126,56 +128,30 @@ export default function ScheduleScreen() {
             ) : null}
           </View>
 
-          <View style={styles.shiftTimes}>
+          <View style={styles.shiftDetails}>
             <View style={styles.timeBlock}>
-              <Feather name="play-circle" size={18} color={SemanticColors.success} />
-              <View>
-                <ThemedText type="caption" style={{ color: theme.textSecondary }}>
-                  Start
-                </ThemedText>
-                <ThemedText type="body" style={{ fontWeight: "600" }}>
-                  {item.startTime}
-                </ThemedText>
-              </View>
-            </View>
-
-            <View style={styles.divider} />
-
-            <View style={styles.timeBlock}>
-              <Feather name="stop-circle" size={18} color={SemanticColors.error} />
-              <View>
-                <ThemedText type="caption" style={{ color: theme.textSecondary }}>
-                  End
-                </ThemedText>
-                <ThemedText type="body" style={{ fontWeight: "600" }}>
-                  {item.endTime}
-                </ThemedText>
-              </View>
-            </View>
-
-            <View style={styles.divider} />
-
-            <View style={styles.timeBlock}>
-              <Feather name="clock" size={18} color={theme.link} />
-              <View>
-                <ThemedText type="caption" style={{ color: theme.textSecondary }}>
-                  Duration
-                </ThemedText>
-                <ThemedText type="body" style={{ fontWeight: "600" }}>
-                  {formatDuration(item.startTime, item.endTime)}
-                </ThemedText>
-              </View>
-            </View>
-          </View>
-
-          {item.breakStart && item.breakEnd ? (
-            <View style={[styles.breakInfo, { backgroundColor: theme.backgroundSecondary }]}>
-              <Feather name="coffee" size={16} color={theme.textSecondary} />
-              <ThemedText type="small" style={{ color: theme.textSecondary }}>
-                Break: {item.breakStart} - {item.breakEnd}
+              <Feather name="clock" size={16} color={theme.link} />
+              <ThemedText type="body" style={{ marginLeft: Spacing.xs }}>
+                {item.startTime} - {item.endTime}
               </ThemedText>
             </View>
-          ) : null}
+
+            {item.breakStart ? (
+              <View style={styles.timeBlock}>
+                <Feather name="coffee" size={16} color={theme.textSecondary} />
+                <ThemedText type="small" style={{ marginLeft: Spacing.xs, color: theme.textSecondary }}>
+                  Break: {item.breakStart} - {item.breakEnd}
+                </ThemedText>
+              </View>
+            ) : null}
+
+            <View style={styles.timeBlock}>
+              <Feather name="activity" size={16} color={SemanticColors.success} />
+              <ThemedText type="small" style={{ marginLeft: Spacing.xs, color: SemanticColors.success }}>
+                {calculateHours(item.startTime, item.endTime, item.breakStart, item.breakEnd)}h working time
+              </ThemedText>
+            </View>
+          </View>
         </Card>
       </Animated.View>
     );
@@ -183,84 +159,47 @@ export default function ScheduleScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.backgroundRoot }]}>
-      <View
-        style={[
-          styles.weekContainer,
-          {
-            paddingTop: headerHeight + Spacing.md,
-            backgroundColor: theme.backgroundRoot,
-          },
-        ]}
-      >
-        <View style={styles.monthRow}>
-          <ThemedText type="h4">
-            {MONTHS[selectedDate.getMonth()]} {selectedDate.getFullYear()}
-          </ThemedText>
-        </View>
-
-        <View style={styles.weekRow}>
-          {weekDates.map((date, index) => {
-            const dateStr = date.toISOString().split("T")[0];
-            const isSelected = dateStr === selectedDateStr;
-            const isToday = dateStr === today;
-            const hasShift = !!getShiftForDate(date);
-
-            return (
-              <Pressable
-                key={index}
-                style={[
-                  styles.dayButton,
-                  isSelected && { backgroundColor: theme.link },
-                ]}
-                onPress={() => setSelectedDate(date)}
-              >
-                <ThemedText
-                  type="caption"
-                  style={[
-                    styles.dayLabel,
-                    { color: isSelected ? "#FFF" : theme.textSecondary },
-                  ]}
-                >
-                  {DAYS[date.getDay()]}
-                </ThemedText>
-                <ThemedText
-                  type="body"
-                  style={[
-                    styles.dayNumber,
-                    {
-                      color: isSelected ? "#FFF" : theme.text,
-                      fontWeight: isToday ? "700" : "500",
-                    },
-                  ]}
-                >
-                  {date.getDate()}
-                </ThemedText>
-                {hasShift ? (
-                  <View
-                    style={[
-                      styles.shiftDot,
-                      { backgroundColor: isSelected ? "#FFF" : SemanticColors.success },
-                    ]}
-                  />
-                ) : null}
-              </Pressable>
-            );
-          })}
+      <View style={[styles.header, { paddingTop: headerHeight + Spacing.md }]}>
+        <View style={styles.viewToggle}>
+          <Pressable
+            style={[
+              styles.toggleButton,
+              viewMode === "week" && { backgroundColor: theme.link },
+            ]}
+            onPress={() => setViewMode("week")}
+          >
+            <ThemedText
+              type="small"
+              style={{ color: viewMode === "week" ? "#FFF" : theme.textPrimary }}
+            >
+              Week
+            </ThemedText>
+          </Pressable>
+          <Pressable
+            style={[
+              styles.toggleButton,
+              viewMode === "month" && { backgroundColor: theme.link },
+            ]}
+            onPress={() => setViewMode("month")}
+          >
+            <ThemedText
+              type="small"
+              style={{ color: viewMode === "month" ? "#FFF" : theme.textPrimary }}
+            >
+              Month
+            </ThemedText>
+          </Pressable>
         </View>
       </View>
 
       <FlatList
-        style={styles.list}
-        contentContainerStyle={{
-          paddingTop: Spacing.lg,
-          paddingBottom: tabBarHeight + Spacing["5xl"],
-          paddingHorizontal: Spacing.lg,
-          flexGrow: 1,
-        }}
-        scrollIndicatorInsets={{ bottom: insets.bottom }}
-        data={upcomingShifts}
+        data={upcomingSchedules}
         keyExtractor={(item) => item.id}
-        renderItem={renderShiftCard}
+        renderItem={renderShift}
+        contentContainerStyle={[
+          styles.listContent,
+          { paddingBottom: tabBarHeight + Spacing.xl },
+        ]}
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
@@ -271,13 +210,16 @@ export default function ScheduleScreen() {
         ListEmptyComponent={
           <EmptyState
             icon="calendar"
-            title="No Shifts Scheduled"
-            message="You don't have any upcoming shifts. Check back later."
+            title="No Upcoming Shifts"
+            message="Your schedule is empty. Check back later for new shifts."
           />
         }
+        ListFooterComponent={
+          <View style={styles.sosContainer}>
+            <SOSButton onPress={handleSOS} />
+          </View>
+        }
       />
-
-      <SOSButton onPress={handleSOS} />
     </View>
   );
 }
@@ -286,38 +228,24 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  weekContainer: {
+  header: {
     paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing.md,
   },
-  monthRow: {
-    marginBottom: Spacing.md,
-  },
-  weekRow: {
+  viewToggle: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    backgroundColor: "rgba(0,0,0,0.05)",
+    borderRadius: BorderRadius.md,
+    padding: 4,
   },
-  dayButton: {
-    alignItems: "center",
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.sm,
-    borderRadius: BorderRadius.sm,
-    minWidth: 44,
-  },
-  dayLabel: {
-    marginBottom: Spacing.xs,
-  },
-  dayNumber: {
-    fontSize: 18,
-  },
-  shiftDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    marginTop: Spacing.xs,
-  },
-  list: {
+  toggleButton: {
     flex: 1,
+    paddingVertical: Spacing.sm,
+    alignItems: "center",
+    borderRadius: BorderRadius.sm,
+  },
+  listContent: {
+    paddingHorizontal: Spacing.lg,
   },
   shiftCard: {
     marginBottom: Spacing.md,
@@ -330,36 +258,23 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: Spacing.lg,
+    marginBottom: Spacing.sm,
   },
   todayBadge: {
     paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xs,
-    borderRadius: BorderRadius.full,
+    paddingVertical: Spacing.xxs,
+    borderRadius: BorderRadius.sm,
   },
-  shiftTimes: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: Spacing.md,
+  shiftDetails: {
+    gap: Spacing.xs,
   },
   timeBlock: {
-    flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    gap: Spacing.sm,
   },
-  divider: {
-    width: 1,
-    height: 32,
-    backgroundColor: "#E0E0E0",
-    marginHorizontal: Spacing.sm,
-  },
-  breakInfo: {
-    flexDirection: "row",
+  sosContainer: {
     alignItems: "center",
-    gap: Spacing.sm,
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.md,
-    borderRadius: BorderRadius.xs,
+    marginTop: Spacing.xl,
+    marginBottom: Spacing.lg,
   },
 });

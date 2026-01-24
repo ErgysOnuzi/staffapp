@@ -120,8 +120,8 @@ export default function ProfileScreen() {
   const roleBadge = getRoleBadge();
 
   const formatContractDate = () => {
-    if (!user?.contractEndDate) return "Not set";
-    return new Date(user.contractEndDate).toLocaleDateString("en-US", {
+    if (!user?.contract?.endDate) return "Not set";
+    return new Date(user.contract.endDate).toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
       day: "numeric",
