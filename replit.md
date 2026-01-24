@@ -9,14 +9,46 @@ StaffHub is a comprehensive staff management mobile application built with Expo 
 - **Last Updated**: January 2026
 
 ## Features
-- **Authentication**: Login with email/password
+- **Authentication**: Login with email/password and company code
 - **Home Dashboard**: Status overview, today's shift, accumulated salary, notifications, quick actions
-- **AI Assistant**: Chat with AI for work-related questions, schedule help, and more
-- **Schedule**: Weekly calendar view with shifts, break times, and positions
+- **Role-Based Navigation**: Different tabs and features based on user role
+- **Schedule**: Weekly calendar view with shifts, break times, and positions (Staff only)
+- **Users Management**: View and manage all users in the company (Admin only)
+- **Team Management**: View team members and approve/reject requests (Manager only)
 - **Requests**: Submit and track requests/reports with status filtering
 - **Profile**: User info, salary summary, contract details, settings
 - **SOS Emergency**: Quick access to emergency services (Police, Security, Ambulance, Firefighters)
 - **Settings**: Theme, accent color, language, security options
+
+## User Roles & Features
+
+### Staff
+- Home: Personal dashboard with shift info, salary, notifications
+- Schedule: View weekly calendar with their shifts
+- Requests: Submit and track their own requests
+- Profile: View personal info and settings
+
+### Manager
+- Home: Personal dashboard with shift info, salary, notifications
+- Team: View team members and their today's shifts
+- Team Requests: View and approve/reject staff requests
+- Requests: View all requests (their own and team's)
+- Profile: View personal info and settings
+
+### Admin
+- Home: Personal dashboard with status overview
+- Users: View and manage all users in the company
+- Requests: View and manage all requests system-wide
+- Profile: View personal info and settings
+
+## Test Accounts
+
+| Role | Email | Password | Company Code |
+|------|-------|----------|--------------|
+| Admin | admin@demo.com | password123 | DEMO |
+| Manager | manager@demo.com | password123 | DEMO |
+| Staff | staff@demo.com | password123 | DEMO |
+| Staff (2) | worker@demo.com | password123 | DEMO |
 
 ## Project Architecture
 
@@ -25,35 +57,21 @@ StaffHub is a comprehensive staff management mobile application built with Expo 
 client/
 ├── App.tsx                 # Main app entry with providers
 ├── components/            # Reusable UI components
-│   ├── Button.tsx
-│   ├── Card.tsx
-│   ├── EmptyState.tsx
-│   ├── ErrorBoundary.tsx
-│   ├── ErrorFallback.tsx
-│   ├── HeaderTitle.tsx
-│   ├── Input.tsx
-│   ├── SOSButton.tsx
-│   ├── StatusBadge.tsx
-│   ├── ThemedText.tsx
-│   └── ThemedView.tsx
 ├── constants/
 │   └── theme.ts           # Colors, spacing, typography
 ├── context/
 │   └── AuthContext.tsx    # Authentication state management
 ├── hooks/
-│   ├── useColorScheme.ts
-│   ├── useScreenOptions.ts
-│   └── useTheme.ts
 ├── lib/
-│   ├── query-client.ts    # React Query setup
-│   └── storage.ts         # AsyncStorage utilities
 ├── navigation/
 │   ├── HomeStackNavigator.tsx
-│   ├── MainTabNavigator.tsx
+│   ├── MainTabNavigator.tsx  # Role-based tab navigation
 │   ├── ProfileStackNavigator.tsx
 │   ├── RequestsStackNavigator.tsx
 │   ├── RootStackNavigator.tsx
-│   └── ScheduleStackNavigator.tsx
+│   ├── ScheduleStackNavigator.tsx
+│   ├── TeamStackNavigator.tsx    # Manager only
+│   └── UsersStackNavigator.tsx   # Admin only
 └── screens/
     ├── HomeScreen.tsx
     ├── LoginScreen.tsx
@@ -62,14 +80,16 @@ client/
     ├── ScheduleScreen.tsx
     ├── SettingsScreen.tsx
     ├── SOSScreen.tsx
-    └── SubmitRequestScreen.tsx
+    ├── SubmitRequestScreen.tsx
+    ├── TeamScreen.tsx        # Manager team view
+    └── UsersScreen.tsx       # Admin users view
 ```
 
 ### Backend (Express.js)
 ```
 server/
 ├── index.ts               # Server entry point
-├── routes.ts              # API routes
+├── routes.ts              # API routes with role-based endpoints
 └── templates/
     └── landing-page.html  # App landing page
 ```
@@ -80,26 +100,26 @@ shared/
 └── schema.ts              # Database schema (Drizzle)
 ```
 
-## Data Storage
-- **Local Storage**: AsyncStorage for user data, requests, schedule, notifications, settings
-- **Mock Data**: Initial login populates sample data for demo purposes
+## API Endpoints
 
-## User Roles
-- **Staff**: View own data (schedule, salary, requests)
-- **Manager**: View team data within their market
-- **Admin**: Full system access
+### Role-Specific Endpoints
+- `GET /api/admin/users` - List all users (Admin only)
+- `GET /api/manager/team` - List team members with today's shifts (Manager only)
+- `GET /api/manager/requests` - List team requests (Manager only)
+- `PUT /api/requests/:id/status` - Approve/reject requests (Manager/Admin)
 
 ## Running the App
 - **Frontend**: `npm run expo:dev` (Port 8081)
 - **Backend**: `npm run server:dev` (Port 5000)
 
 ## Recent Changes
-- Added AI Assistant feature with OpenAI integration via Replit AI Integrations
-- Added Quick Actions section on Home screen for easy access to AI Assistant and New Request
-- Database tables for conversations and messages for chat history
+- Implemented role-based navigation with different tabs for Admin, Manager, and Staff
+- Added Users management screen for Admin role
+- Added Team management screen for Manager role with approve/reject functionality
+- Updated Quick Actions to show New Request and Emergency SOS
+- Added company code requirement for login authentication
 - Initial MVP implementation with all core screens
-- Authentication flow with mock user data
-- AsyncStorage for local data persistence
+- Authentication flow with role-based access
 - SOS emergency feature with confirmation flow
 - Request/Report submission with anonymous option
 - Settings with theme, language, and security options
