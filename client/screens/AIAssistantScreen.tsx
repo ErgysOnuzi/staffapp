@@ -6,7 +6,6 @@ import {
   Pressable,
   StyleSheet,
   ActivityIndicator,
-  KeyboardAvoidingView,
   Platform,
   ListRenderItem,
 } from "react-native";
@@ -33,7 +32,7 @@ interface Conversation {
 }
 
 export default function AIAssistantScreen() {
-  const theme = useTheme();
+  const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
   const flatListRef = useRef<FlatList>(null);
@@ -147,8 +146,8 @@ export default function AIAssistantScreen() {
           {
             backgroundColor:
               item.role === "user"
-                ? theme.colors.primary
-                : theme.colors.surfaceElevated,
+                ? theme.primary
+                : theme.backgroundSecondary,
           },
         ]}
       >
@@ -168,11 +167,11 @@ export default function AIAssistantScreen() {
   const renderEmptyState = useCallback(
     () => (
       <View style={styles.emptyContainer}>
-        <View style={[styles.iconCircle, { backgroundColor: theme.colors.surfaceElevated }]}>
-          <Feather name="message-circle" size={48} color={theme.colors.primary} />
+        <View style={[styles.iconCircle, { backgroundColor: theme.backgroundSecondary }]}>
+          <Feather name="message-circle" size={48} color={theme.primary} />
         </View>
         <ThemedText style={styles.emptyTitle}>AI Assistant</ThemedText>
-        <ThemedText style={[styles.emptySubtitle, { color: theme.colors.textSecondary }]}>
+        <ThemedText style={[styles.emptySubtitle, { color: theme.textSecondary }]}>
           Ask me anything about your schedule, requests, or work-related questions
         </ThemedText>
       </View>
@@ -209,8 +208,8 @@ export default function AIAssistantScreen() {
           style={[
             styles.inputContainer,
             {
-              backgroundColor: theme.colors.surface,
-              borderTopColor: theme.colors.border,
+              backgroundColor: theme.backgroundDefault,
+              borderTopColor: theme.border,
               paddingBottom: insets.bottom > 0 ? insets.bottom : Spacing.md,
             },
           ]}
@@ -219,12 +218,12 @@ export default function AIAssistantScreen() {
             style={[
               styles.input,
               {
-                backgroundColor: theme.colors.surfaceElevated,
-                color: theme.colors.text,
+                backgroundColor: theme.backgroundSecondary,
+                color: theme.text,
               },
             ]}
             placeholder="Ask me anything..."
-            placeholderTextColor={theme.colors.textSecondary}
+            placeholderTextColor={theme.textSecondary}
             value={inputText}
             onChangeText={setInputText}
             onSubmitEditing={sendMessage}
@@ -241,8 +240,8 @@ export default function AIAssistantScreen() {
               {
                 backgroundColor:
                   inputText.trim() && !isLoading
-                    ? theme.colors.primary
-                    : theme.colors.surfaceElevated,
+                    ? theme.primary
+                    : theme.backgroundSecondary,
               },
             ]}
           >
@@ -252,7 +251,7 @@ export default function AIAssistantScreen() {
               <Feather
                 name="send"
                 size={20}
-                color={inputText.trim() ? "#FFFFFF" : theme.colors.textSecondary}
+                color={inputText.trim() ? "#FFFFFF" : theme.textSecondary}
               />
             )}
           </Pressable>

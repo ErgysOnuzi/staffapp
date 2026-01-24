@@ -10,7 +10,8 @@ StaffHub is a comprehensive staff management mobile application built with Expo 
 
 ## Features
 - **Authentication**: Login with email/password
-- **Home Dashboard**: Status overview, today's shift, accumulated salary, notifications
+- **Home Dashboard**: Status overview, today's shift, accumulated salary, notifications, quick actions
+- **AI Assistant**: Chat with AI for work-related questions, schedule help, and more
 - **Schedule**: Weekly calendar view with shifts, break times, and positions
 - **Requests**: Submit and track requests/reports with status filtering
 - **Profile**: User info, salary summary, contract details, settings
@@ -93,6 +94,9 @@ shared/
 - **Backend**: `npm run server:dev` (Port 5000)
 
 ## Recent Changes
+- Added AI Assistant feature with OpenAI integration via Replit AI Integrations
+- Added Quick Actions section on Home screen for easy access to AI Assistant and New Request
+- Database tables for conversations and messages for chat history
 - Initial MVP implementation with all core screens
 - Authentication flow with mock user data
 - AsyncStorage for local data persistence

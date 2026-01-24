@@ -376,7 +376,7 @@ const styles = StyleSheet.create({
   },
   statValue: {
     marginTop: Spacing.xs,
-    marginBottom: Spacing.xxs,
+    marginBottom: Spacing.xs,
   },
   sectionHeader: {
     flexDirection: "row",
@@ -421,7 +421,7 @@ const styles = StyleSheet.create({
   notificationIcon: {
     width: 36,
     height: 36,
-    borderRadius: BorderRadius.round,
+    borderRadius: BorderRadius.full,
     alignItems: "center",
     justifyContent: "center",
     marginRight: Spacing.sm,
@@ -447,7 +447,7 @@ const styles = StyleSheet.create({
   quickActionIcon: {
     width: 40,
     height: 40,
-    borderRadius: BorderRadius.round,
+    borderRadius: BorderRadius.full,
     alignItems: "center",
     justifyContent: "center",
   },
