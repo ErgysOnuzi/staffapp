@@ -22,12 +22,13 @@ export default function LoginScreen() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [companyCode, setCompanyCode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
   const handleLogin = async () => {
-    if (!email.trim() || !password.trim()) {
-      setError("Please enter your email and password");
+    if (!email.trim() || !password.trim() || !companyCode.trim()) {
+      setError("Please fill in all fields");
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       return;
     }
@@ -36,7 +37,7 @@ export default function LoginScreen() {
     setError("");
 
     try {
-      const success = await login(email, password);
+      const success = await login(email, password, companyCode);
       if (success) {
         await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       } else {
@@ -89,6 +90,17 @@ export default function LoginScreen() {
           onChangeText={setPassword}
           autoCapitalize="none"
           testID="input-password"
+        />
+
+        <Input
+          label="Company Code"
+          placeholder="Enter your company code"
+          leftIcon="briefcase"
+          value={companyCode}
+          onChangeText={setCompanyCode}
+          autoCapitalize="characters"
+          autoCorrect={false}
+          testID="input-company-code"
         />
 
         {error ? (
