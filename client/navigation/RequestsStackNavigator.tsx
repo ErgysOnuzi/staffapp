@@ -1,25 +1,25 @@
 import React from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
-import ProfileScreen from "@/screens/ProfileScreen";
+import RequestsScreen from "@/screens/RequestsScreen";
 import { useScreenOptions } from "@/hooks/useScreenOptions";
 
-export type ProfileStackParamList = {
-  Profile: undefined;
+export type RequestsStackParamList = {
+  Requests: undefined;
 };
 
-const Stack = createNativeStackNavigator<ProfileStackParamList>();
+const Stack = createNativeStackNavigator<RequestsStackParamList>();
 
-export default function ProfileStackNavigator() {
+export default function RequestsStackNavigator() {
   const screenOptions = useScreenOptions();
 
   return (
     <Stack.Navigator screenOptions={screenOptions}>
       <Stack.Screen
-        name="Profile"
-        component={ProfileScreen}
+        name="Requests"
+        component={RequestsScreen}
         options={{
-          headerTitle: "Profile",
+          headerTitle: "Requests",
         }}
       />
     </Stack.Navigator>

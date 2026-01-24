@@ -3,12 +3,17 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Feather } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { Platform, StyleSheet } from "react-native";
+
 import HomeStackNavigator from "@/navigation/HomeStackNavigator";
+import ScheduleStackNavigator from "@/navigation/ScheduleStackNavigator";
+import RequestsStackNavigator from "@/navigation/RequestsStackNavigator";
 import ProfileStackNavigator from "@/navigation/ProfileStackNavigator";
 import { useTheme } from "@/hooks/useTheme";
 
 export type MainTabParamList = {
   HomeTab: undefined;
+  ScheduleTab: undefined;
+  RequestsTab: undefined;
   ProfileTab: undefined;
 };
 
@@ -50,6 +55,26 @@ export default function MainTabNavigator() {
           title: "Home",
           tabBarIcon: ({ color, size }) => (
             <Feather name="home" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="ScheduleTab"
+        component={ScheduleStackNavigator}
+        options={{
+          title: "Schedule",
+          tabBarIcon: ({ color, size }) => (
+            <Feather name="calendar" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="RequestsTab"
+        component={RequestsStackNavigator}
+        options={{
+          title: "Requests",
+          tabBarIcon: ({ color, size }) => (
+            <Feather name="file-text" size={size} color={color} />
           ),
         }}
       />

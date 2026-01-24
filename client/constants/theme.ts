@@ -1,30 +1,52 @@
 import { Platform } from "react-native";
 
-const tintColorLight = "#007AFF";
-const tintColorDark = "#0A84FF";
+const tintColorLight = "#1A73E8";
+const tintColorDark = "#4285F4";
+
+export const SemanticColors = {
+  success: "#34A853",
+  warning: "#FBBC04",
+  error: "#EA4335",
+  info: "#4285F4",
+  primary: "#1A73E8",
+};
+
+export const AccentColors = {
+  white: "#FFFFFF",
+  pink: "#F48FB1",
+  green: "#81C784",
+  blue: "#64B5F6",
+  red: "#E57373",
+};
 
 export const Colors = {
   light: {
-    text: "#11181C",
+    text: "#202124",
+    textSecondary: "#5F6368",
     buttonText: "#FFFFFF",
-    tabIconDefault: "#687076",
+    tabIconDefault: "#5F6368",
     tabIconSelected: tintColorLight,
-    link: "#007AFF",
-    backgroundRoot: "#FFFFFF", // Elevation 0
-    backgroundDefault: "#F2F2F2", // Elevation 1
-    backgroundSecondary: "#E6E6E6", // Elevation 2
-    backgroundTertiary: "#D9D9D9", // Elevation 3
+    link: tintColorLight,
+    backgroundRoot: "#F8F9FA",
+    backgroundDefault: "#FFFFFF",
+    backgroundSecondary: "#F1F3F4",
+    backgroundTertiary: "#E8EAED",
+    border: "#DADCE0",
+    ...SemanticColors,
   },
   dark: {
-    text: "#ECEDEE",
+    text: "#E8EAED",
+    textSecondary: "#9AA0A6",
     buttonText: "#FFFFFF",
-    tabIconDefault: "#9BA1A6",
+    tabIconDefault: "#9AA0A6",
     tabIconSelected: tintColorDark,
-    link: "#0A84FF",
-    backgroundRoot: "#1F2123", // Elevation 0
-    backgroundDefault: "#2A2C2E", // Elevation 1
-    backgroundSecondary: "#353739", // Elevation 2
-    backgroundTertiary: "#404244", // Elevation 3
+    link: tintColorDark,
+    backgroundRoot: "#121212",
+    backgroundDefault: "#1E1E1E",
+    backgroundSecondary: "#282828",
+    backgroundTertiary: "#323232",
+    border: "#3C4043",
+    ...SemanticColors,
   },
 };
 
@@ -54,6 +76,11 @@ export const BorderRadius = {
 };
 
 export const Typography = {
+  hero: {
+    fontSize: 32,
+    lineHeight: 40,
+    fontWeight: "700" as const,
+  },
   h1: {
     fontSize: 32,
     lineHeight: 40,
@@ -84,6 +111,11 @@ export const Typography = {
     lineHeight: 20,
     fontWeight: "400" as const,
   },
+  caption: {
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: "500" as const,
+  },
   link: {
     fontSize: 16,
     lineHeight: 24,
@@ -93,13 +125,9 @@ export const Typography = {
 
 export const Fonts = Platform.select({
   ios: {
-    /** iOS `UIFontDescriptorSystemDesignDefault` */
     sans: "system-ui",
-    /** iOS `UIFontDescriptorSystemDesignSerif` */
     serif: "ui-serif",
-    /** iOS `UIFontDescriptorSystemDesignRounded` */
     rounded: "ui-rounded",
-    /** iOS `UIFontDescriptorSystemDesignMonospaced` */
     mono: "ui-monospace",
   },
   default: {
