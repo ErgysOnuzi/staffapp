@@ -69,10 +69,7 @@ export default function CompanyScreen() {
 
   const updateMutation = useMutation({
     mutationFn: async (data: Partial<Company>) => {
-      return apiRequest("/api/companies", {
-        method: "PUT",
-        body: JSON.stringify(data),
-      });
+      return apiRequest("PUT", "/api/companies", data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/companies"] });

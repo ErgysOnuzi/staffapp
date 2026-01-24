@@ -59,10 +59,7 @@ export default function MarketsScreen() {
 
   const createMutation = useMutation({
     mutationFn: async (data: { name: string; address: string }) => {
-      return apiRequest("/api/markets", {
-        method: "POST",
-        body: JSON.stringify(data),
-      });
+      return apiRequest("POST", "/api/markets", data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/markets"] });
@@ -74,10 +71,7 @@ export default function MarketsScreen() {
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: { name: string; address: string } }) => {
-      return apiRequest(`/api/markets/${id}`, {
-        method: "PUT",
-        body: JSON.stringify(data),
-      });
+      return apiRequest("PUT", `/api/markets/${id}`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/markets"] });
@@ -89,9 +83,7 @@ export default function MarketsScreen() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      return apiRequest(`/api/markets/${id}`, {
-        method: "DELETE",
-      });
+      return apiRequest("DELETE", `/api/markets/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/markets"] });

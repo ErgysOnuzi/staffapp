@@ -38,6 +38,10 @@ StaffHub is a comprehensive staff management mobile application built with Expo 
 ### Admin
 - Home: Personal dashboard with status overview
 - Users: View and manage all users in the company
+  - User Detail: View/edit individual user profiles, change roles, assign to markets
+  - Add User: Create new users with role and market assignment
+  - Company Overview: View company stats (user counts, locations, pending requests)
+  - Manage Locations: CRUD operations for company markets/locations
 - Requests: View and manage all requests system-wide
 - Profile: View personal info and settings
 
@@ -81,8 +85,12 @@ client/
     ├── SettingsScreen.tsx
     ├── SOSScreen.tsx
     ├── SubmitRequestScreen.tsx
-    ├── TeamScreen.tsx        # Manager team view
-    └── UsersScreen.tsx       # Admin users view
+    ├── TeamScreen.tsx           # Manager team view
+    ├── UsersScreen.tsx          # Admin users list
+    ├── UserDetailScreen.tsx     # Admin: View/edit user
+    ├── AddUserScreen.tsx        # Admin: Create new user
+    ├── CompanyScreen.tsx        # Admin: Company overview
+    └── MarketsScreen.tsx        # Admin: Manage locations
 ```
 
 ### Backend (Express.js)
@@ -104,15 +112,30 @@ shared/
 
 ### Role-Specific Endpoints
 - `GET /api/admin/users` - List all users (Admin only)
+- `POST /api/admin/users` - Create new user (Admin only)
+- `GET /api/admin/company-stats` - Get company statistics (Admin only)
+- `GET /api/admin/markets` - List markets with user counts (Admin only)
 - `GET /api/manager/team` - List team members with today's shifts (Manager only)
 - `GET /api/manager/requests` - List team requests (Manager only)
 - `PUT /api/requests/:id/status` - Approve/reject requests (Manager/Admin)
+- `PUT /api/users/:id` - Update user details (Admin only)
+- `DELETE /api/users/:id` - Delete user (Admin only)
+- `PUT /api/companies` - Update company info (Admin only)
+- `POST /api/markets` - Create market (Admin only)
+- `PUT /api/markets/:id` - Update market (Admin only)
+- `DELETE /api/markets/:id` - Delete market (Admin only)
 
 ## Running the App
 - **Frontend**: `npm run expo:dev` (Port 8081)
 - **Backend**: `npm run server:dev` (Port 5000)
 
 ## Recent Changes
+- **January 2026**: Added comprehensive admin management system
+  - UserDetailScreen: View/edit user profiles with role change confirmation
+  - AddUserScreen: Create new users with role and market assignment
+  - CompanyScreen: Company dashboard with statistics
+  - MarketsScreen: Location management with CRUD operations
+  - New API endpoints for all admin operations
 - Implemented role-based navigation with different tabs for Admin, Manager, and Staff
 - Added Users management screen for Admin role
 - Added Team management screen for Manager role with approve/reject functionality

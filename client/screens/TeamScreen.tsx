@@ -65,10 +65,7 @@ export default function TeamScreen() {
 
   const updateRequestMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: "approved" | "rejected" }) => {
-      return apiRequest(`/api/requests/${id}/status`, {
-        method: "PUT",
-        body: JSON.stringify({ status }),
-      });
+      return apiRequest("PUT", `/api/requests/${id}/status`, { status });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/manager/requests"] });

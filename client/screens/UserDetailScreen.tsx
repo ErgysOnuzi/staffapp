@@ -76,10 +76,7 @@ export default function UserDetailScreen() {
 
   const updateMutation = useMutation({
     mutationFn: async (data: Partial<User>) => {
-      return apiRequest(`/api/users/${userId}`, {
-        method: "PUT",
-        body: JSON.stringify(data),
-      });
+      return apiRequest("PUT", `/api/users/${userId}`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/users", userId] });
@@ -91,9 +88,7 @@ export default function UserDetailScreen() {
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
-      return apiRequest(`/api/users/${userId}`, {
-        method: "DELETE",
-      });
+      return apiRequest("DELETE", `/api/users/${userId}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });

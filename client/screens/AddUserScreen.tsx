@@ -56,10 +56,7 @@ export default function AddUserScreen() {
 
   const createMutation = useMutation({
     mutationFn: async () => {
-      return apiRequest("/api/admin/users", {
-        method: "POST",
-        body: JSON.stringify(formData),
-      });
+      return apiRequest("POST", "/api/admin/users", formData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
