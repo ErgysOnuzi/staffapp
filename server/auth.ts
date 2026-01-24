@@ -60,6 +60,24 @@ export async function authenticate(req: Request, res: Response, next: NextFuncti
   next();
 }
 
+// Role hierarchy: owner > admin > cfo/hr_admin > manager > supervisor > staff
+export const ROLE_HIERARCHY = {
+  owner: 7,
+  admin: 6,
+  cfo: 5,
+  hr_admin: 5,
+  manager: 4,
+  supervisor: 3,
+  staff: 1,
+};
+
+// Role groups for permission checking
+export const EXECUTIVE_ROLES = ["owner", "admin", "cfo", "hr_admin"];
+export const USER_MANAGEMENT_ROLES = ["owner", "admin", "hr_admin"];
+export const FINANCIAL_ROLES = ["owner", "admin", "cfo"];
+export const TEAM_MANAGEMENT_ROLES = ["owner", "admin", "hr_admin", "manager", "supervisor"];
+export const ALL_MANAGEMENT_ROLES = ["owner", "admin", "cfo", "hr_admin", "manager", "supervisor"];
+
 export function requireRole(...roles: string[]) {
   return (req: Request, res: Response, next: NextFunction) => {
     if (!req.user) {
@@ -74,20 +92,41 @@ export function requireRole(...roles: string[]) {
   };
 }
 
+export function hasHigherOrEqualRole(userRole: string, targetRole: string): boolean {
+  return (ROLE_HIERARCHY[userRole as keyof typeof ROLE_HIERARCHY] || 0) >= 
+         (ROLE_HIERARCHY[targetRole as keyof typeof ROLE_HIERARCHY] || 0);
+}
+
 export function canAccessUser(targetUserId: string, req: Request): boolean {
   if (!req.user) return false;
   
-  if (req.user.role === "admin") return true;
+  // Executives can access all users
+  if (EXECUTIVE_ROLES.includes(req.user.role)) return true;
   if (req.user.id === targetUserId) return true;
   
   return false;
 }
 
+export function canManageUsers(req: Request): boolean {
+  if (!req.user) return false;
+  return USER_MANAGEMENT_ROLES.includes(req.user.role);
+}
+
+export function canViewFinancials(req: Request): boolean {
+  if (!req.user) return false;
+  return FINANCIAL_ROLES.includes(req.user.role);
+}
+
+export function canManageTeam(req: Request): boolean {
+  if (!req.user) return false;
+  return TEAM_MANAGEMENT_ROLES.includes(req.user.role);
+}
+
 export async function canAccessMarket(marketId: string, req: Request): Promise<boolean> {
   if (!req.user) return false;
   
-  if (req.user.role === "admin") return true;
-  if (req.user.role === "manager" && req.user.marketId === marketId) return true;
+  if (EXECUTIVE_ROLES.includes(req.user.role)) return true;
+  if (["manager", "supervisor"].includes(req.user.role) && req.user.marketId === marketId) return true;
   
   return false;
 }
