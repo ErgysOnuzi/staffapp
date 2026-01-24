@@ -20,7 +20,7 @@ import { Card } from "@/components/Card";
 import { EmptyState } from "@/components/EmptyState";
 import { useTheme } from "@/hooks/useTheme";
 import { Spacing, BorderRadius, SemanticColors } from "@/constants/theme";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest } from "@/lib/query-client";
 
 interface Market {
   id: string;
