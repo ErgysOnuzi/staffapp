@@ -115,6 +115,10 @@ export default function HomeScreen() {
     navigation.navigate("SOS");
   };
 
+  const handleAIAssistant = () => {
+    navigation.navigate("AIAssistant");
+  };
+
   const getGreeting = () => {
     const hour = new Date().getHours();
     if (hour < 12) return "Good morning";
@@ -200,6 +204,46 @@ export default function HomeScreen() {
         </Animated.View>
 
         <Animated.View entering={FadeInDown.duration(400).delay(200)}>
+          <View style={styles.sectionHeader}>
+            <ThemedText type="h4">Quick Actions</ThemedText>
+          </View>
+
+          <View style={styles.quickActionsRow}>
+            <Pressable
+              style={[styles.quickActionCard, { backgroundColor: theme.backgroundSecondary }]}
+              onPress={handleAIAssistant}
+              testID="button-ai-assistant"
+            >
+              <View style={[styles.quickActionIcon, { backgroundColor: theme.link }]}>
+                <Feather name="message-circle" size={20} color="#FFFFFF" />
+              </View>
+              <ThemedText type="body" style={{ fontWeight: "600", marginTop: Spacing.xs }}>
+                AI Assistant
+              </ThemedText>
+              <ThemedText type="small" style={{ color: theme.textSecondary }}>
+                Get help
+              </ThemedText>
+            </Pressable>
+
+            <Pressable
+              style={[styles.quickActionCard, { backgroundColor: theme.backgroundSecondary }]}
+              onPress={() => navigation.navigate("SubmitRequest")}
+              testID="button-submit-request"
+            >
+              <View style={[styles.quickActionIcon, { backgroundColor: SemanticColors.info }]}>
+                <Feather name="file-plus" size={20} color="#FFFFFF" />
+              </View>
+              <ThemedText type="body" style={{ fontWeight: "600", marginTop: Spacing.xs }}>
+                New Request
+              </ThemedText>
+              <ThemedText type="small" style={{ color: theme.textSecondary }}>
+                Submit form
+              </ThemedText>
+            </Pressable>
+          </View>
+        </Animated.View>
+
+        <Animated.View entering={FadeInDown.duration(400).delay(300)}>
           <View style={styles.sectionHeader}>
             <ThemedText type="h4">Today's Shift</ThemedText>
           </View>
@@ -388,5 +432,23 @@ const styles = StyleSheet.create({
   sosContainer: {
     marginTop: Spacing.xl,
     alignItems: "center",
+  },
+  quickActionsRow: {
+    flexDirection: "row",
+    gap: Spacing.md,
+    marginBottom: Spacing.md,
+  },
+  quickActionCard: {
+    flex: 1,
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    alignItems: "center",
+  },
+  quickActionIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: BorderRadius.round,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });
