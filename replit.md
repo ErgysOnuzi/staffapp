@@ -22,28 +22,69 @@ StaffHub is a comprehensive staff management mobile application built with Expo 
 
 ## User Roles & Features
 
+### Role Hierarchy (highest to lowest)
+1. **Owner** (level 7) - Full control over company
+2. **Admin** (level 6) - Full administrative access
+3. **CFO** (level 5) - Financial access only
+4. **HR Admin** (level 5) - User management without financial access
+5. **Manager** (level 4) - Team management
+6. **Supervisor** (level 3) - Team oversight
+7. **Staff** (level 1) - Basic employee access
+
+### Role Groups
+- **Executive Roles**: owner, admin, cfo, hr_admin - Access to company dashboard/stats
+- **User Management Roles**: owner, admin, hr_admin - Can create/edit/delete users
+- **Financial Roles**: owner, admin, cfo - Access to salary and payment features
+- **Team Management Roles**: owner, admin, hr_admin, manager, supervisor - Can manage team and approve requests
+
 ### Staff
 - Home: Personal dashboard with shift info, salary, notifications
 - Schedule: View weekly calendar with their shifts
 - Requests: Submit and track their own requests
 - Profile: View personal info and settings
 
-### Manager
+### Supervisor
 - Home: Personal dashboard with shift info, salary, notifications
+- Team: View team members and their today's shifts
+- Team Requests: View and approve/reject staff requests
+- Requests: View all requests
+- Profile: View personal info and settings
+
+### Manager
+- Same as Supervisor, plus additional team management features
 - Team: View team members and their today's shifts
 - Team Requests: View and approve/reject staff requests
 - Requests: View all requests (their own and team's)
 - Profile: View personal info and settings
 
-### Admin
+### CFO
+- Home: Personal dashboard with financial overview
+- Schedule: View schedules (read-only)
+- Requests: View and manage all requests
+- Profile: View personal info and settings
+- Access to salary/payment data and financial reports
+
+### HR Admin
 - Home: Personal dashboard with status overview
 - Users: View and manage all users in the company
   - User Detail: View/edit individual user profiles, change roles, assign to markets
   - Add User: Create new users with role and market assignment
-  - Company Overview: View company stats (user counts, locations, pending requests)
+  - Company Overview: View company stats (user counts, locations)
   - Manage Locations: CRUD operations for company markets/locations
-- Requests: View and manage all requests system-wide
+- Requests: View and manage all requests
 - Profile: View personal info and settings
+
+### Admin
+- All HR Admin features, plus:
+- System settings access
+- Full company management
+- Access to financial data
+
+### Owner
+- All Admin features, plus:
+- Highest level of access
+- Cannot be demoted by other roles
+- Company settings and critical operations
 
 ## Test Accounts
 
