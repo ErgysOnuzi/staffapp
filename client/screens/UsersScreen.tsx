@@ -5,11 +5,12 @@ import {
   FlatList,
   RefreshControl,
   Pressable,
+  ActivityIndicator,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
-import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
-import { useFocusEffect } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Feather } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 
@@ -19,6 +20,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { EmptyState } from "@/components/EmptyState";
 import { useTheme } from "@/hooks/useTheme";
 import { Spacing, BorderRadius, SemanticColors } from "@/constants/theme";
+import { UsersStackParamList } from "@/navigation/UsersStackNavigator";
 
 interface User {
   id: string;
@@ -30,11 +32,13 @@ interface User {
   accumulatedSalary?: string;
 }
 
+type UsersNavigationProp = NativeStackNavigationProp<UsersStackParamList, "Users">;
+
 export default function UsersScreen() {
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
-  const tabBarHeight = useBottomTabBarHeight();
   const { theme } = useTheme();
+  const navigation = useNavigation<UsersNavigationProp>();
 
   const [filter, setFilter] = useState<"all" | "staff" | "manager" | "admin">("all");
 
@@ -89,52 +93,59 @@ export default function UsersScreen() {
   const filters: Array<"all" | "staff" | "manager" | "admin"> = ["all", "staff", "manager", "admin"];
 
   const renderUser = ({ item }: { item: User }) => (
-    <Card elevation={1} style={styles.userCard}>
-      <View style={styles.userHeader}>
-        <View style={[styles.avatar, { backgroundColor: theme.backgroundSecondary }]}>
-          <Feather name="user" size={24} color={theme.link} />
-        </View>
-        <View style={styles.userInfo}>
-          <ThemedText type="body" style={{ fontWeight: "600" }}>
-            {item.name}
-          </ThemedText>
-          <ThemedText type="small" style={{ color: theme.textSecondary }}>
-            {item.email}
-          </ThemedText>
-        </View>
-        <View style={[styles.roleBadge, { backgroundColor: getRoleColor(item.role) }]}>
-          <ThemedText type="small" style={styles.roleText}>
-            {getRoleLabel(item.role)}
-          </ThemedText>
-        </View>
-      </View>
-      
-      <View style={styles.userDetails}>
-        <View style={styles.detailItem}>
-          <ThemedText type="small" style={{ color: theme.textSecondary }}>Standing</ThemedText>
-          <StatusBadge 
-            status={getStandingVariant(item.standing)} 
-            label={item.standing.replace("_", " ").replace(/\b\w/g, l => l.toUpperCase())} 
-          />
-        </View>
-        {item.hourlyRate ? (
-          <View style={styles.detailItem}>
-            <ThemedText type="small" style={{ color: theme.textSecondary }}>Rate</ThemedText>
+    <Pressable onPress={() => navigation.navigate("UserDetail", { userId: item.id })}>
+      <Card elevation={1} style={styles.userCard}>
+        <View style={styles.userHeader}>
+          <View style={[styles.avatar, { backgroundColor: theme.backgroundSecondary }]}>
+            <Feather name="user" size={24} color={theme.link} />
+          </View>
+          <View style={styles.userInfo}>
             <ThemedText type="body" style={{ fontWeight: "600" }}>
-              €{parseFloat(item.hourlyRate).toFixed(2)}/hr
+              {item.name}
+            </ThemedText>
+            <ThemedText type="small" style={{ color: theme.textSecondary }}>
+              {item.email}
             </ThemedText>
           </View>
-        ) : null}
-        {item.accumulatedSalary ? (
-          <View style={styles.detailItem}>
-            <ThemedText type="small" style={{ color: theme.textSecondary }}>Salary</ThemedText>
-            <ThemedText type="body" style={{ fontWeight: "600" }}>
-              €{parseFloat(item.accumulatedSalary).toFixed(2)}
+          <View style={[styles.roleBadge, { backgroundColor: getRoleColor(item.role) }]}>
+            <ThemedText type="small" style={styles.roleText}>
+              {getRoleLabel(item.role)}
             </ThemedText>
           </View>
-        ) : null}
-      </View>
-    </Card>
+        </View>
+        
+        <View style={styles.userDetails}>
+          <View style={styles.detailItem}>
+            <ThemedText type="small" style={{ color: theme.textSecondary }}>Standing</ThemedText>
+            <StatusBadge 
+              status={getStandingVariant(item.standing)} 
+              label={item.standing.replace("_", " ").replace(/\b\w/g, l => l.toUpperCase())} 
+            />
+          </View>
+          {item.hourlyRate ? (
+            <View style={styles.detailItem}>
+              <ThemedText type="small" style={{ color: theme.textSecondary }}>Rate</ThemedText>
+              <ThemedText type="body" style={{ fontWeight: "600" }}>
+                €{parseFloat(item.hourlyRate).toFixed(2)}/hr
+              </ThemedText>
+            </View>
+          ) : null}
+          {item.accumulatedSalary ? (
+            <View style={styles.detailItem}>
+              <ThemedText type="small" style={{ color: theme.textSecondary }}>Salary</ThemedText>
+              <ThemedText type="body" style={{ fontWeight: "600" }}>
+                €{parseFloat(item.accumulatedSalary).toFixed(2)}
+              </ThemedText>
+            </View>
+          ) : null}
+        </View>
+
+        <View style={styles.tapHint}>
+          <ThemedText type="small" style={{ color: theme.link }}>Tap to view details</ThemedText>
+          <Feather name="chevron-right" size={16} color={theme.link} />
+        </View>
+      </Card>
+    </Pressable>
   );
 
   return (
@@ -165,7 +176,7 @@ export default function UsersScreen() {
         renderItem={renderUser}
         contentContainerStyle={[
           styles.listContent,
-          { paddingBottom: tabBarHeight + Spacing.xl },
+          { paddingBottom: insets.bottom + Spacing.xl + 80 },
         ]}
         refreshControl={
           <RefreshControl
@@ -175,13 +186,26 @@ export default function UsersScreen() {
           />
         }
         ListEmptyComponent={
-          <EmptyState
-            icon="users"
-            title="No users found"
-            message={filter === "all" ? "No users in the system yet" : `No ${filter}s found`}
-          />
+          isLoading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={theme.link} />
+            </View>
+          ) : (
+            <EmptyState
+              icon="users"
+              title="No users found"
+              message={filter === "all" ? "No users in the system yet" : `No ${filter}s found`}
+            />
+          )
         }
       />
+
+      <Pressable
+        style={[styles.fab, { backgroundColor: theme.link }]}
+        onPress={() => navigation.navigate("AddUser")}
+      >
+        <Feather name="user-plus" size={24} color="#FFFFFF" />
+      </Pressable>
     </View>
   );
 }
@@ -204,6 +228,10 @@ const styles = StyleSheet.create({
   listContent: {
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.sm,
+  },
+  loadingContainer: {
+    padding: Spacing.xl,
+    alignItems: "center",
   },
   userCard: {
     marginBottom: Spacing.md,
@@ -242,5 +270,28 @@ const styles = StyleSheet.create({
   },
   detailItem: {
     alignItems: "center",
+  },
+  tapHint: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingTop: Spacing.sm,
+    marginTop: Spacing.sm,
+    gap: Spacing.xs,
+  },
+  fab: {
+    position: "absolute",
+    right: Spacing.lg,
+    bottom: Spacing.xl + 80,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 5,
   },
 });

@@ -680,14 +680,146 @@ export async function registerRoutes(app: Express): Promise<Server> {
         id: users.id,
         name: users.name,
         email: users.email,
+        phone: users.phone,
         role: users.role,
         standing: users.standing,
         hourlyRate: users.hourlyRate,
+        holidayRate: users.holidayRate,
         accumulatedSalary: users.accumulatedSalary,
+        marketId: users.marketId,
+        createdAt: users.createdAt,
       }).from(users).where(eq(users.companyId, req.user!.companyId));
       res.json(allUsers);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch users" });
+    }
+  });
+
+  app.post("/api/admin/users", authenticate, requireRole("admin"), async (req, res) => {
+    try {
+      const { email, password, name, phone, role = "staff", hourlyRate, holidayRate, marketId } = req.body;
+      
+      if (!email || !password || !name) {
+        return res.status(400).json({ error: "Email, password, and name are required" });
+      }
+
+      const existing = await db.select().from(users).where(
+        and(eq(users.email, email.toLowerCase()), eq(users.companyId, req.user!.companyId))
+      ).limit(1);
+      if (existing.length > 0) {
+        return res.status(400).json({ error: "Email already exists in this company" });
+      }
+
+      const [user] = await db.insert(users).values({
+        email: email.toLowerCase(),
+        password: hashPassword(password),
+        name,
+        phone,
+        role,
+        companyId: req.user!.companyId,
+        marketId,
+        hourlyRate: hourlyRate || "15.00",
+        holidayRate: holidayRate || "22.50",
+      }).returning();
+
+      const { password: _, ...userWithoutPassword } = user;
+      res.json(userWithoutPassword);
+    } catch (error) {
+      console.error("Create user error:", error);
+      res.status(500).json({ error: "Failed to create user" });
+    }
+  });
+
+  app.get("/api/admin/company-stats", authenticate, requireRole("admin"), async (req, res) => {
+    try {
+      const companyId = req.user!.companyId;
+      
+      const allUsers = await db.select().from(users).where(eq(users.companyId, companyId));
+      const allMarkets = await db.select().from(markets).where(eq(markets.companyId, companyId));
+      
+      const admins = allUsers.filter(u => u.role === "admin").length;
+      const managers = allUsers.filter(u => u.role === "manager").length;
+      const staff = allUsers.filter(u => u.role === "staff").length;
+      
+      const companyUserIds = allUsers.map(u => u.id);
+      const allRequests = await db.select().from(requests);
+      const pendingRequests = allRequests.filter(r => companyUserIds.includes(r.userId) && r.status === "pending").length;
+      
+      res.json({
+        totalUsers: allUsers.length,
+        admins,
+        managers,
+        staff,
+        totalMarkets: allMarkets.length,
+        pendingRequests,
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch company stats" });
+    }
+  });
+
+  app.get("/api/admin/markets", authenticate, requireRole("admin"), async (req, res) => {
+    try {
+      const companyId = req.user!.companyId;
+      const allMarkets = await db.select().from(markets).where(eq(markets.companyId, companyId));
+      const allUsers = await db.select({ id: users.id, marketId: users.marketId }).from(users).where(eq(users.companyId, companyId));
+      
+      const result = allMarkets.map(market => ({
+        ...market,
+        userCount: allUsers.filter(u => u.marketId === market.id).length,
+      }));
+      
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch markets" });
+    }
+  });
+
+  app.put("/api/markets/:id", authenticate, requireRole("admin"), async (req, res) => {
+    try {
+      const { name, address } = req.body;
+      const [updated] = await db.update(markets)
+        .set({ name, address })
+        .where(and(eq(markets.id, req.params.id), eq(markets.companyId, req.user!.companyId)))
+        .returning();
+      
+      if (!updated) {
+        return res.status(404).json({ error: "Market not found" });
+      }
+      
+      res.json(updated);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update market" });
+    }
+  });
+
+  app.delete("/api/markets/:id", authenticate, requireRole("admin"), async (req, res) => {
+    try {
+      await db.update(users)
+        .set({ marketId: null })
+        .where(eq(users.marketId, req.params.id));
+      
+      await db.delete(markets).where(
+        and(eq(markets.id, req.params.id), eq(markets.companyId, req.user!.companyId))
+      );
+      
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete market" });
+    }
+  });
+
+  app.put("/api/companies", authenticate, requireRole("admin"), async (req, res) => {
+    try {
+      const { name, address } = req.body;
+      const [updated] = await db.update(companies)
+        .set({ name, address })
+        .where(eq(companies.id, req.user!.companyId))
+        .returning();
+      
+      res.json(updated);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update company" });
     }
   });
 
