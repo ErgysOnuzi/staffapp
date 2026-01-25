@@ -856,7 +856,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/manager/team", authenticate, requireRole(...TEAM_MANAGEMENT_ROLES), async (req, res) => {
     try {
-      const today = new Date().toISOString().split("T")[0];
+      const today = new Date();
+      const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      const todayEnd = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
       
       const teamMembers = await db.select({
         id: users.id,
@@ -873,7 +875,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
 
       const todaySchedules = await db.select().from(schedules).where(
-        eq(schedules.date, today)
+        and(
+          sql`${schedules.date} >= ${todayStart}`,
+          sql`${schedules.date} < ${todayEnd}`
+        )
       );
 
       const result = teamMembers.map(member => {
@@ -890,6 +895,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json(result);
     } catch (error) {
+      console.error("Failed to fetch team:", error);
       res.status(500).json({ error: "Failed to fetch team" });
     }
   });
