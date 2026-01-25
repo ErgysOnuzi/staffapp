@@ -22,11 +22,13 @@ import { useTheme } from "@/hooks/useTheme";
 import { Spacing, BorderRadius, SemanticColors } from "@/constants/theme";
 import { UsersStackParamList } from "@/navigation/UsersStackNavigator";
 
+type UserRole = "owner" | "admin" | "cfo" | "hr_admin" | "manager" | "supervisor" | "staff";
+
 interface User {
   id: string;
   name: string;
   email: string;
-  role: "staff" | "manager" | "admin";
+  role: UserRole;
   standing: "all_good" | "good" | "at_risk";
   hourlyRate?: string;
   accumulatedSalary?: string;
@@ -40,7 +42,7 @@ export default function UsersScreen() {
   const { theme } = useTheme();
   const navigation = useNavigation<UsersNavigationProp>();
 
-  const [filter, setFilter] = useState<"all" | "staff" | "manager" | "admin">("all");
+  const [filter, setFilter] = useState<"all" | UserRole>("all");
 
   const { data: users = [], refetch, isLoading } = useQuery<User[]>({
     queryKey: ["/api/admin/users"],
@@ -76,25 +78,36 @@ export default function UsersScreen() {
 
   const getRoleColor = (role: string) => {
     switch (role) {
+      case "owner": return "#6B21A8";
       case "admin": return SemanticColors.error;
+      case "cfo": return "#059669";
+      case "hr_admin": return "#7C3AED";
       case "manager": return SemanticColors.warning;
+      case "supervisor": return "#0891B2";
       default: return SemanticColors.info;
     }
   };
 
   const getRoleLabel = (role: string) => {
     switch (role) {
+      case "owner": return "Owner";
       case "admin": return "Admin";
+      case "cfo": return "CFO";
+      case "hr_admin": return "HR Admin";
       case "manager": return "Manager";
+      case "supervisor": return "Supervisor";
       default: return "Staff";
     }
   };
 
-  const filters: Array<"all" | "staff" | "manager" | "admin"> = ["all", "staff", "manager", "admin"];
+  const filters: Array<"all" | UserRole> = ["all", "staff", "supervisor", "manager", "admin"];
 
   const renderUser = ({ item }: { item: User }) => (
-    <Pressable onPress={() => navigation.navigate("UserDetail", { userId: item.id })}>
-      <Card elevation={1} style={styles.userCard}>
+      <Card 
+        elevation={1} 
+        style={styles.userCard}
+        onPress={() => navigation.navigate("UserDetail", { userId: item.id })}
+      >
         <View style={styles.userHeader}>
           <View style={[styles.avatar, { backgroundColor: theme.backgroundSecondary }]}>
             <Feather name="user" size={24} color={theme.link} />
@@ -118,7 +131,7 @@ export default function UsersScreen() {
           <View style={styles.detailItem}>
             <ThemedText type="small" style={{ color: theme.textSecondary }}>Standing</ThemedText>
             <StatusBadge 
-              status={getStandingVariant(item.standing)} 
+              variant={getStandingVariant(item.standing)} 
               label={item.standing.replace("_", " ").replace(/\b\w/g, l => l.toUpperCase())} 
             />
           </View>
@@ -145,7 +158,6 @@ export default function UsersScreen() {
           <Feather name="chevron-right" size={16} color={theme.link} />
         </View>
       </Card>
-    </Pressable>
   );
 
   return (

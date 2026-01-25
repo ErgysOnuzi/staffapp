@@ -397,7 +397,7 @@ export default function UserDetailScreen() {
             </View>
           ) : (
             <>
-              <ThemedText type="heading" style={styles.userName}>
+              <ThemedText type="h3" style={styles.userName}>
                 {user.name}
               </ThemedText>
               <ThemedText type="body" style={{ color: theme.textSecondary, marginBottom: Spacing.md }}>
@@ -409,7 +409,7 @@ export default function UserDetailScreen() {
                 </ThemedText>
               ) : null}
               <StatusBadge 
-                status={getStandingVariant(user.standing)} 
+                variant={getStandingVariant(user.standing)} 
                 label={user.standing.replace("_", " ").replace(/\b\w/g, l => l.toUpperCase())} 
               />
             </>
@@ -417,7 +417,7 @@ export default function UserDetailScreen() {
         </Card>
 
         <Card elevation={1} style={styles.detailsCard}>
-          <ThemedText type="subheading" style={{ marginBottom: Spacing.md }}>
+          <ThemedText type="h4" style={{ marginBottom: Spacing.md }}>
             Employment Details
           </ThemedText>
 
@@ -553,7 +553,7 @@ export default function UserDetailScreen() {
         <View style={styles.modalOverlay}>
           <Card elevation={3} style={styles.confirmModal}>
             <Feather name="alert-triangle" size={40} color={SemanticColors.warning} style={{ alignSelf: "center" }} />
-            <ThemedText type="subheading" style={{ textAlign: "center", marginTop: Spacing.md }}>
+            <ThemedText type="h4" style={{ textAlign: "center", marginTop: Spacing.md }}>
               Change Role
             </ThemedText>
             <ThemedText type="body" style={{ textAlign: "center", color: theme.textSecondary, marginTop: Spacing.sm }}>

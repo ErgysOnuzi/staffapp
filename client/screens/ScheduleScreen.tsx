@@ -109,7 +109,7 @@ export default function ScheduleScreen() {
 
     return (
       <Animated.View entering={FadeInDown.duration(300).delay(index * 50)}>
-        <Card elevation={1} style={[shiftCardMarginStyle, isToday ? todayCardStyle : undefined] as ViewStyle}>
+        <Card elevation={1} style={isToday ? {...shiftCardMarginStyle, ...todayCardStyle} : shiftCardMarginStyle}>
           <View style={styles.shiftHeader}>
             <View>
               <ThemedText type="body" style={{ fontWeight: "600" }}>
@@ -170,7 +170,7 @@ export default function ScheduleScreen() {
           >
             <ThemedText
               type="small"
-              style={{ color: viewMode === "week" ? "#FFF" : theme.textPrimary }}
+              style={{ color: viewMode === "week" ? "#FFF" : theme.text }}
             >
               Week
             </ThemedText>
@@ -184,7 +184,7 @@ export default function ScheduleScreen() {
           >
             <ThemedText
               type="small"
-              style={{ color: viewMode === "month" ? "#FFF" : theme.textPrimary }}
+              style={{ color: viewMode === "month" ? "#FFF" : theme.text }}
             >
               Month
             </ThemedText>
@@ -262,7 +262,7 @@ const styles = StyleSheet.create({
   },
   todayBadge: {
     paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xxs,
+    paddingVertical: Spacing.xs,
     borderRadius: BorderRadius.sm,
   },
   shiftDetails: {
