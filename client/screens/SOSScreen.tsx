@@ -222,8 +222,14 @@ export default function SOSScreen() {
               <ThemedText type="body" style={{ fontWeight: "600" }}>
                 {selectedType?.toUpperCase()}
               </ThemedText>
-              . This will notify the relevant authorities immediately.
+              . This will notify your company's designated responders.
             </ThemedText>
+            <View style={[styles.disclaimerBox, { backgroundColor: SemanticColors.warning + "15" }]}>
+              <Feather name="alert-circle" size={16} color={SemanticColors.warning} />
+              <ThemedText type="small" style={[styles.disclaimerText, { color: SemanticColors.warning }]}>
+                This is NOT a replacement for official emergency services. In life-threatening situations, call 112 or your local emergency number directly.
+              </ThemedText>
+            </View>
             <View style={styles.confirmButtons}>
               <Pressable
                 style={[styles.confirmButton, { backgroundColor: theme.backgroundSecondary }]}
@@ -334,7 +340,19 @@ const styles = StyleSheet.create({
   },
   confirmMessage: {
     textAlign: "center",
+    marginBottom: Spacing.md,
+  },
+  disclaimerBox: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    padding: Spacing.md,
+    borderRadius: BorderRadius.sm,
     marginBottom: Spacing.xl,
+    gap: Spacing.sm,
+  },
+  disclaimerText: {
+    flex: 1,
+    lineHeight: 18,
   },
   confirmButtons: {
     flexDirection: "row",

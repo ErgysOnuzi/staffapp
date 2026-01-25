@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { View, StyleSheet, ScrollView, Pressable, Switch } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
+import { useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 
@@ -10,6 +12,7 @@ import { Card } from "@/components/Card";
 import { useTheme } from "@/hooks/useTheme";
 import { storage, Settings } from "@/lib/storage";
 import { Spacing, SemanticColors, BorderRadius, AccentColors } from "@/constants/theme";
+import { ProfileStackParamList } from "@/navigation/ProfileStackNavigator";
 
 type ThemeOption = "light" | "dark" | "system";
 type LanguageOption = "en" | "sq" | "sr";
@@ -35,10 +38,13 @@ const accentOptions: { key: AccentOption; color: string }[] = [
   { key: "red", color: AccentColors.red },
 ];
 
+type SettingsNavigationProp = NativeStackNavigationProp<ProfileStackParamList, "Settings">;
+
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
   const { theme } = useTheme();
+  const navigation = useNavigation<SettingsNavigationProp>();
 
   const [settings, setSettings] = useState<Settings>({
     theme: "system",
@@ -226,6 +232,42 @@ export default function SettingsScreen() {
             <Feather name="chevron-right" size={20} color={theme.textSecondary} />
           </Pressable>
         </Card>
+
+        <ThemedText type="h4" style={styles.sectionTitle}>
+          Legal
+        </ThemedText>
+        <Card elevation={1} style={[styles.card, { padding: 0 }]}>
+          <Pressable 
+            style={[styles.legalItem, { borderBottomWidth: 1, borderBottomColor: theme.border }]}
+            onPress={() => navigation.navigate("PrivacyPolicy")}
+          >
+            <View style={styles.legalItemLeft}>
+              <Feather name="lock" size={18} color={theme.link} />
+              <ThemedText type="body">Privacy Policy</ThemedText>
+            </View>
+            <Feather name="chevron-right" size={20} color={theme.textSecondary} />
+          </Pressable>
+          <Pressable 
+            style={[styles.legalItem, { borderBottomWidth: 1, borderBottomColor: theme.border }]}
+            onPress={() => navigation.navigate("TermsOfService")}
+          >
+            <View style={styles.legalItemLeft}>
+              <Feather name="file-text" size={18} color={theme.link} />
+              <ThemedText type="body">Terms of Service</ThemedText>
+            </View>
+            <Feather name="chevron-right" size={20} color={theme.textSecondary} />
+          </Pressable>
+          <Pressable 
+            style={styles.legalItem}
+            onPress={() => navigation.navigate("About")}
+          >
+            <View style={styles.legalItemLeft}>
+              <Feather name="info" size={18} color={theme.link} />
+              <ThemedText type="body">About StaffHub</ThemedText>
+            </View>
+            <Feather name="chevron-right" size={20} color={theme.textSecondary} />
+          </Pressable>
+        </Card>
       </ScrollView>
     </View>
   );
@@ -309,5 +351,17 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
+  },
+  legalItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: Spacing.lg,
+    paddingHorizontal: Spacing.xl,
+  },
+  legalItemLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.md,
   },
 });
