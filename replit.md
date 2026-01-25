@@ -189,7 +189,33 @@ shared/
 - ConsentScreen.tsx: First-time agreement screen (blocks app until accepted)
 - Settings > Legal section: Access to all legal documents
 
+## Google Play Store Submission
+
+### Required URLs (after deployment)
+- **Privacy Policy**: https://YOUR_DEPLOYED_DOMAIN/privacy
+- **Terms of Service**: https://YOUR_DEPLOYED_DOMAIN/terms
+
+### Documentation Files
+- `docs/DATA_SAFETY_PLAYSTORE.md` - Complete Data Safety form answers for Play Console
+- `docs/APPSTORE_LISTING.md` - App store description, keywords, and listing content
+
+### Data Safety Summary
+The app collects: name, email, phone, salary data, location (SOS only), device IDs
+Data is encrypted in transit (HTTPS) and users can request deletion via privacy@staffhub.app
+
+### Deployment Checklist
+1. Publish the app to get a production URL
+2. Replace YOUR_DEPLOYED_DOMAIN in legal documents with actual domain
+3. Complete Play Console Data Safety form using docs/DATA_SAFETY_PLAYSTORE.md
+4. Upload store listing content from docs/APPSTORE_LISTING.md
+5. Complete internal testing → closed testing → production
+
 ## Recent Changes
+- **January 2026**: Added Google Play submission documentation
+  - Public Privacy Policy page at /privacy
+  - Public Terms of Service page at /terms
+  - Data Safety documentation for Play Console
+  - App store listing content and descriptions
 - **January 2026**: Added legal compliance framework for production readiness
   - Privacy Policy with GDPR rights and Kosovo jurisdiction
   - Terms of Service with emergency SOS disclaimer
