@@ -210,7 +210,16 @@ export default function PrivacyPolicyScreen() {
 
         <Card elevation={1} style={styles.card}>
           <ThemedText type="h4" style={styles.sectionTitle}>
-            9. Changes to This Policy
+            9. Governing Law
+          </ThemedText>
+          <ThemedText type="body" style={[styles.paragraph, { color: theme.textSecondary }]}>
+            This Privacy Policy is governed by and construed in accordance with the laws of the Republic of Kosovo. Any disputes arising from this policy shall be subject to the exclusive jurisdiction of the courts of Kosovo.
+          </ThemedText>
+        </Card>
+
+        <Card elevation={1} style={styles.card}>
+          <ThemedText type="h4" style={styles.sectionTitle}>
+            10. Changes to This Policy
           </ThemedText>
           <ThemedText type="body" style={[styles.paragraph, { color: theme.textSecondary }]}>
             We may update this privacy policy from time to time. We will notify you of any changes by updating the "Last Updated" date at the top of this policy. We encourage you to review this policy periodically.
@@ -219,7 +228,7 @@ export default function PrivacyPolicyScreen() {
 
         <Card elevation={1} style={styles.card}>
           <ThemedText type="h4" style={styles.sectionTitle}>
-            10. Contact Us
+            11. Contact Us
           </ThemedText>
           <ThemedText type="body" style={[styles.paragraph, { color: theme.textSecondary }]}>
             If you have questions or concerns about this Privacy Policy or our data practices, please contact your company administrator or reach out to us at:
