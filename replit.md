@@ -174,7 +174,28 @@ shared/
 - **Frontend**: `npm run expo:dev` (Port 8081)
 - **Backend**: `npm run server:dev` (Port 5000)
 
+## Legal Compliance (Kosovo / GDPR / App Store)
+- **Privacy Policy**: Comprehensive data handling information, Kosovo jurisdiction, GDPR rights
+- **Terms of Service**: User agreement with liability limitations, emergency SOS disclaimer
+- **First-Time Consent Flow**: Users must accept Terms and Privacy Policy before accessing app
+- **GDPR Data Rights**: Access, rectify, delete, port, and withdraw consent
+- **SOS Disclaimer**: Clear warning that app SOS is not a replacement for emergency services (112)
+- **About Screen**: App version, company info, contact details
+
+### Legal Screens
+- PrivacyPolicyScreen.tsx: Full privacy policy with Kosovo jurisdiction
+- TermsOfServiceScreen.tsx: Full terms with emergency services disclaimer
+- AboutScreen.tsx: App information and developer contact
+- ConsentScreen.tsx: First-time agreement screen (blocks app until accepted)
+- Settings > Legal section: Access to all legal documents
+
 ## Recent Changes
+- **January 2026**: Added legal compliance framework for production readiness
+  - Privacy Policy with GDPR rights and Kosovo jurisdiction
+  - Terms of Service with emergency SOS disclaimer
+  - First-time consent flow blocking app access until accepted
+  - About screen with app version and company info
+  - Legal section in Settings for easy document access
 - **January 2026**: Added comprehensive admin management system
   - UserDetailScreen: View/edit user profiles with role change confirmation
   - AddUserScreen: Create new users with role and market assignment
