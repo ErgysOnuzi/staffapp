@@ -178,17 +178,17 @@ export default function SubmitRequestScreen() {
 
         <View style={styles.buttonContainer}>
           <Button
-            title="Submit"
             onPress={handleSubmit}
-            loading={submitMutation.isPending}
             disabled={submitMutation.isPending}
-          />
-          <Button
-            title="Cancel"
-            variant="secondary"
+          >
+            {submitMutation.isPending ? "Submitting..." : "Submit"}
+          </Button>
+          <Pressable
+            style={[styles.cancelButton, { backgroundColor: theme.backgroundSecondary, height: Spacing.buttonHeight, borderRadius: 9999, alignItems: "center", justifyContent: "center" }]}
             onPress={() => navigation.goBack()}
-            style={styles.cancelButton}
-          />
+          >
+            <ThemedText type="body" style={{ fontWeight: "600" }}>Cancel</ThemedText>
+          </Pressable>
         </View>
       </ScrollView>
     </View>
