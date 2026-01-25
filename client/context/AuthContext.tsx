@@ -8,7 +8,7 @@ export interface User {
   name: string;
   email: string;
   phone?: string;
-  role: "staff" | "manager" | "admin";
+  role: "owner" | "admin" | "cfo" | "hr_admin" | "manager" | "supervisor" | "staff";
   standing: "all_good" | "good" | "at_risk";
   marketId?: string;
   accumulatedSalary?: string;
