@@ -826,6 +826,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Create new company - Owner and Admin only
+  app.post("/api/companies", authenticate, requireRole("owner", "admin"), async (req, res) => {
+    try {
+      const { name, code, address } = req.body;
+      
+      if (!name || !code) {
+        return res.status(400).json({ error: "Company name and code are required" });
+      }
+
+      // Check if code already exists
+      const existingCompany = await db.select().from(companies).where(eq(companies.code, code.toUpperCase())).limit(1);
+      if (existingCompany.length > 0) {
+        return res.status(400).json({ error: "Company code already exists" });
+      }
+
+      const [newCompany] = await db.insert(companies).values({
+        name,
+        code: code.toUpperCase(),
+        address: address || null,
+      }).returning();
+      
+      res.status(201).json(newCompany);
+    } catch (error) {
+      console.error("Create company error:", error);
+      res.status(500).json({ error: "Failed to create company" });
+    }
+  });
+
   app.get("/api/manager/team", authenticate, requireRole(...TEAM_MANAGEMENT_ROLES), async (req, res) => {
     try {
       const today = new Date().toISOString().split("T")[0];

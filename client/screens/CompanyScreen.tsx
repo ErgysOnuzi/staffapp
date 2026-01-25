@@ -288,7 +288,7 @@ export default function CompanyScreen() {
           </Pressable>
 
           <Pressable
-            style={styles.actionRow}
+            style={[styles.actionRow, { borderBottomColor: theme.backgroundSecondary }]}
             onPress={() => navigation.navigate("AddUser")}
           >
             <View style={[styles.actionIcon, { backgroundColor: `${SemanticColors.success}20` }]}>
@@ -298,6 +298,22 @@ export default function CompanyScreen() {
               <ThemedText type="body" style={{ fontWeight: "600" }}>Add New User</ThemedText>
               <ThemedText type="small" style={{ color: theme.textSecondary }}>
                 Create a new employee account
+              </ThemedText>
+            </View>
+            <Feather name="chevron-right" size={20} color={theme.textSecondary} />
+          </Pressable>
+
+          <Pressable
+            style={styles.actionRow}
+            onPress={() => navigation.navigate("AddCompany")}
+          >
+            <View style={[styles.actionIcon, { backgroundColor: `${SemanticColors.warning}20` }]}>
+              <Feather name="briefcase" size={20} color={SemanticColors.warning} />
+            </View>
+            <View style={styles.actionInfo}>
+              <ThemedText type="body" style={{ fontWeight: "600" }}>Create Company</ThemedText>
+              <ThemedText type="small" style={{ color: theme.textSecondary }}>
+                Add a new company (Owner/Admin only)
               </ThemedText>
             </View>
             <Feather name="chevron-right" size={20} color={theme.textSecondary} />

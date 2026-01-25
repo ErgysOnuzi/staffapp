@@ -6,6 +6,7 @@ import UserDetailScreen from "@/screens/UserDetailScreen";
 import AddUserScreen from "@/screens/AddUserScreen";
 import CompanyScreen from "@/screens/CompanyScreen";
 import MarketsScreen from "@/screens/MarketsScreen";
+import AddCompanyScreen from "@/screens/AddCompanyScreen";
 import { useScreenOptions } from "@/hooks/useScreenOptions";
 import { HeaderTitle } from "@/components/HeaderTitle";
 
@@ -16,6 +17,7 @@ export type UsersStackParamList = {
   AddUser: undefined;
   Company: undefined;
   Markets: undefined;
+  AddCompany: undefined;
 };
 
 const Stack = createNativeStackNavigator<UsersStackParamList>();
@@ -65,6 +67,13 @@ export default function UsersStackNavigator() {
         component={MarketsScreen}
         options={{
           headerTitle: () => <HeaderTitle title="Locations" />,
+        }}
+      />
+      <Stack.Screen
+        name="AddCompany"
+        component={AddCompanyScreen}
+        options={{
+          headerTitle: () => <HeaderTitle title="Create Company" />,
         }}
       />
     </Stack.Navigator>
