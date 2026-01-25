@@ -260,6 +260,26 @@
         }
       }
 
+      .legal-links {
+        margin-top: 32px;
+        padding-top: 24px;
+        border-top: 1px solid #ddd;
+        text-align: center;
+        font-size: 14px;
+      }
+      .legal-links a {
+        color: #666;
+        text-decoration: none;
+      }
+      .legal-links a:hover {
+        color: #333;
+        text-decoration: underline;
+      }
+      .legal-links .divider {
+        color: #ccc;
+        margin: 0 12px;
+      }
+
       /* Dark mode */
       @media (prefers-color-scheme: dark) {
         body {
@@ -325,6 +345,18 @@
         .open-button:hover {
           background: #e0e0e0;
         }
+        .legal-links {
+          border-top-color: #333;
+        }
+        .legal-links a {
+          color: #888;
+        }
+        .legal-links a:hover {
+          color: #ccc;
+        }
+        .legal-links .divider {
+          color: #555;
+        }
       }
     </style>
   </head>
@@ -389,6 +421,12 @@
               >Open in Expo Go</a
             >
           </div>
+        </div>
+
+        <div class="legal-links">
+          <a href="/privacy">Privacy Policy</a>
+          <span class="divider">|</span>
+          <a href="/terms">Terms of Service</a>
         </div>
       </div>
     </div>
