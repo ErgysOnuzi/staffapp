@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getApiUrl, setAuthToken, clearAuthToken, getAuthToken, queryClient } from "@/lib/query-client";
+import { storage } from "@/lib/storage";
 
 export interface User {
   id: string;
@@ -29,10 +30,12 @@ interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  hasConsent: boolean;
   login: (email: string, password: string, companyCode: string) => Promise<boolean>;
   logout: () => Promise<void>;
   updateUser: (updates: Partial<User>) => Promise<void>;
   refreshUser: () => Promise<void>;
+  acceptConsent: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -41,6 +44,7 @@ const USER_STORAGE_KEY = "@staffhub:user";
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasConsent, setHasConsent] = useState(false);
 
   useEffect(() => {
     loadUser();
@@ -48,6 +52,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loadUser = async () => {
     try {
+      const consentAccepted = await storage.hasAcceptedTerms();
+      setHasConsent(consentAccepted);
+
       const token = await getAuthToken();
       if (token) {
         const baseUrl = getApiUrl();
@@ -167,16 +174,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const acceptConsent = async () => {
+    await storage.setConsent({
+      termsAccepted: true,
+      privacyAccepted: true,
+      acceptedAt: new Date().toISOString(),
+      version: "1.0.0",
+    });
+    setHasConsent(true);
+  };
+
   return (
     <AuthContext.Provider
       value={{
         user,
         isLoading,
         isAuthenticated: !!user,
+        hasConsent,
         login,
         logout,
         updateUser,
         refreshUser,
+        acceptConsent,
       }}
     >
       {children}

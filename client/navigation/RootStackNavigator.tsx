@@ -6,14 +6,15 @@ import LoginScreen from "@/screens/LoginScreen";
 import SOSScreen from "@/screens/SOSScreen";
 import SubmitRequestScreen from "@/screens/SubmitRequestScreen";
 import SettingsScreen from "@/screens/SettingsScreen";
+import ConsentScreen from "@/screens/ConsentScreen";
 import { useScreenOptions } from "@/hooks/useScreenOptions";
 import { useAuth } from "@/context/AuthContext";
 import { ThemedView } from "@/components/ThemedView";
-import { ThemedText } from "@/components/ThemedText";
 import { View, ActivityIndicator, StyleSheet } from "react-native";
 
 export type RootStackParamList = {
   Login: undefined;
+  Consent: undefined;
   Main: undefined;
   SOS: undefined;
   SubmitRequest: undefined;
@@ -32,10 +33,14 @@ function LoadingScreen() {
 
 export default function RootStackNavigator() {
   const screenOptions = useScreenOptions();
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, hasConsent, acceptConsent } = useAuth();
 
   if (isLoading) {
     return <LoadingScreen />;
+  }
+
+  if (isAuthenticated && !hasConsent) {
+    return <ConsentScreen onAccept={acceptConsent} />;
   }
 
   return (

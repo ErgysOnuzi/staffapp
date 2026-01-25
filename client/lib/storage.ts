@@ -7,7 +7,15 @@ const KEYS = {
   SCHEDULE: "@staffhub_schedule",
   NOTIFICATIONS: "@staffhub_notifications",
   SETTINGS: "@staffhub_settings",
+  CONSENT: "@staffhub_consent",
 };
+
+export interface ConsentData {
+  termsAccepted: boolean;
+  privacyAccepted: boolean;
+  acceptedAt: string;
+  version: string;
+}
 
 export type UserRole = "staff" | "manager" | "admin";
 
@@ -164,5 +172,27 @@ export const storage = {
 
   async clearAll(): Promise<void> {
     await AsyncStorage.multiRemove(Object.values(KEYS));
+  },
+
+  async getConsent(): Promise<ConsentData | null> {
+    try {
+      const data = await AsyncStorage.getItem(KEYS.CONSENT);
+      return data ? JSON.parse(data) : null;
+    } catch {
+      return null;
+    }
+  },
+
+  async setConsent(consent: ConsentData): Promise<void> {
+    await AsyncStorage.setItem(KEYS.CONSENT, JSON.stringify(consent));
+  },
+
+  async clearConsent(): Promise<void> {
+    await AsyncStorage.removeItem(KEYS.CONSENT);
+  },
+
+  async hasAcceptedTerms(): Promise<boolean> {
+    const consent = await this.getConsent();
+    return consent?.termsAccepted === true && consent?.privacyAccepted === true;
   },
 };
