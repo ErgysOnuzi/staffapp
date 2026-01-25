@@ -45,7 +45,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         marketId,
       }).returning();
 
-      const token = createSession(user.id);
+      const token = await createSession(user.id);
       const { password: _, ...userWithoutPassword } = user;
       res.json({ user: { ...userWithoutPassword, company }, token });
     } catch (error) {
@@ -97,7 +97,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         lockedUntil: null 
       }).where(eq(users.id, user.id));
 
-      const token = createSession(user.id);
+      const token = await createSession(user.id);
       const { password: _, ...userWithoutPassword } = user;
       res.json({ user: { ...userWithoutPassword, company }, token });
     } catch (error) {
@@ -106,9 +106,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/auth/logout", authenticate, (req, res) => {
+  app.post("/api/auth/logout", authenticate, async (req, res) => {
     const token = req.headers.authorization?.split(" ")[1];
-    if (token) destroySession(token);
+    if (token) await destroySession(token);
     res.json({ success: true });
   });
 

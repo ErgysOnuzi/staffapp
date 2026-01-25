@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { db } from "./db";
-import { users } from "../shared/schema";
-import { eq } from "drizzle-orm";
+import { users, sessions } from "../shared/schema";
+import { eq, and, gt } from "drizzle-orm";
 import crypto from "crypto";
 
 declare global {
@@ -13,8 +13,6 @@ declare global {
   }
 }
 
-const sessions = new Map<string, { userId: string; expiresAt: Date }>();
-
 export function hashPassword(password: string): string {
   return crypto.createHash("sha256").update(password).digest("hex");
 }
@@ -23,15 +21,21 @@ export function verifyPassword(password: string, hash: string): boolean {
   return hashPassword(password) === hash;
 }
 
-export function createSession(userId: string): string {
+export async function createSession(userId: string): Promise<string> {
   const token = crypto.randomBytes(32).toString("hex");
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-  sessions.set(token, { userId, expiresAt });
+  
+  await db.insert(sessions).values({
+    token,
+    userId,
+    expiresAt,
+  });
+  
   return token;
 }
 
-export function destroySession(token: string): void {
-  sessions.delete(token);
+export async function destroySession(token: string): Promise<void> {
+  await db.delete(sessions).where(eq(sessions.token, token));
 }
 
 export async function authenticate(req: Request, res: Response, next: NextFunction) {
@@ -42,10 +46,16 @@ export async function authenticate(req: Request, res: Response, next: NextFuncti
   }
 
   const token = authHeader.split(" ")[1];
-  const session = sessions.get(token);
+  
+  const [session] = await db.select().from(sessions).where(
+    and(
+      eq(sessions.token, token),
+      gt(sessions.expiresAt, new Date())
+    )
+  ).limit(1);
 
-  if (!session || session.expiresAt < new Date()) {
-    sessions.delete(token);
+  if (!session) {
+    await db.delete(sessions).where(eq(sessions.token, token));
     return res.status(401).json({ error: "Session expired" });
   }
 

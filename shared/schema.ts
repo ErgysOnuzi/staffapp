@@ -140,6 +140,13 @@ export const salaryPayments = pgTable("salary_payments", {
   paidAt: timestamp("paid_at").defaultNow().notNull(),
 });
 
+export const sessions = pgTable("sessions", {
+  token: varchar("token").primaryKey(),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true, updatedAt: true });
 export const selectUserSchema = createSelectSchema(users);
 export const loginSchema = z.object({
