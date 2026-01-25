@@ -18,6 +18,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ThemedText } from "@/components/ThemedText";
 import { Card } from "@/components/Card";
 import { useTheme } from "@/hooks/useTheme";
+import { useAuth } from "@/context/AuthContext";
 import { Spacing, BorderRadius, SemanticColors } from "@/constants/theme";
 import { apiRequest } from "@/lib/query-client";
 import { UsersStackParamList } from "@/navigation/UsersStackNavigator";
@@ -46,11 +47,15 @@ export default function CompanyScreen() {
   const headerHeight = useHeaderHeight();
   const tabBarHeight = useBottomTabBarHeight();
   const { theme } = useTheme();
+  const { user } = useAuth();
   const navigation = useNavigation<CompanyNavigationProp>();
   const queryClient = useQueryClient();
 
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState<Partial<Company>>({});
+
+  // Only Owner and Admin can create companies
+  const canCreateCompany = user?.role === "owner" || user?.role === "admin";
 
   const { data: company, refetch: refetchCompany, isLoading } = useQuery<Company>({
     queryKey: ["/api/companies"],
@@ -303,21 +308,23 @@ export default function CompanyScreen() {
             <Feather name="chevron-right" size={20} color={theme.textSecondary} />
           </Pressable>
 
-          <Pressable
-            style={styles.actionRow}
-            onPress={() => navigation.navigate("AddCompany")}
-          >
-            <View style={[styles.actionIcon, { backgroundColor: `${SemanticColors.warning}20` }]}>
-              <Feather name="briefcase" size={20} color={SemanticColors.warning} />
-            </View>
-            <View style={styles.actionInfo}>
-              <ThemedText type="body" style={{ fontWeight: "600" }}>Create Company</ThemedText>
-              <ThemedText type="small" style={{ color: theme.textSecondary }}>
-                Add a new company (Owner/Admin only)
-              </ThemedText>
-            </View>
-            <Feather name="chevron-right" size={20} color={theme.textSecondary} />
-          </Pressable>
+          {canCreateCompany ? (
+            <Pressable
+              style={styles.actionRow}
+              onPress={() => navigation.navigate("AddCompany")}
+            >
+              <View style={[styles.actionIcon, { backgroundColor: `${SemanticColors.warning}20` }]}>
+                <Feather name="briefcase" size={20} color={SemanticColors.warning} />
+              </View>
+              <View style={styles.actionInfo}>
+                <ThemedText type="body" style={{ fontWeight: "600" }}>Create Company</ThemedText>
+                <ThemedText type="small" style={{ color: theme.textSecondary }}>
+                  Add a new company (Owner/Admin only)
+                </ThemedText>
+              </View>
+              <Feather name="chevron-right" size={20} color={theme.textSecondary} />
+            </Pressable>
+          ) : null}
         </Card>
 
         <View style={styles.actions}>
