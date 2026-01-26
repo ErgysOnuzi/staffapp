@@ -16,6 +16,26 @@ import {
 
 export async function registerRoutes(app: Express): Promise<Server> {
 
+  // Health check endpoint for monitoring and Google Play
+  app.get("/api/health", async (req, res) => {
+    try {
+      // Check database connectivity
+      const result = await db.execute(sql`SELECT 1 as ok`);
+      res.json({ 
+        status: "healthy", 
+        database: "connected",
+        timestamp: new Date().toISOString(),
+        version: "1.0.0"
+      });
+    } catch (error) {
+      res.status(503).json({ 
+        status: "unhealthy", 
+        database: "disconnected",
+        timestamp: new Date().toISOString()
+      });
+    }
+  });
+
   app.post("/api/auth/register", async (req, res) => {
     try {
       const { email, password, name, companyCode, role = "staff", marketId } = req.body;

@@ -3,6 +3,7 @@ import type { Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import * as fs from "fs";
 import * as path from "path";
+import { seedDemoAccounts } from "./seed-demo";
 
 const app = express();
 const log = console.log;
@@ -255,6 +256,8 @@ function setupErrorHandler(app: express.Application) {
   setupRequestLogging(app);
 
   configureExpoAndLanding(app);
+
+  await seedDemoAccounts();
 
   const server = await registerRoutes(app);
 
