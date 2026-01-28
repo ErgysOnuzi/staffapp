@@ -36,6 +36,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/register-company", async (req, res) => {
+    try {
+      const { companyName, companyCode, companyAddress, ownerName, ownerEmail, ownerPhone, password } = req.body;
+
+      if (!companyName || !companyCode || !ownerName || !ownerEmail || !password) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+
+      if (companyCode.length < 4) {
+        return res.status(400).json({ message: "Company code must be at least 4 characters" });
+      }
+
+      if (password.length < 8) {
+        return res.status(400).json({ message: "Password must be at least 8 characters" });
+      }
+
+      const existingCompany = await db.select().from(companies).where(eq(companies.code, companyCode.toUpperCase())).limit(1);
+      if (existingCompany.length > 0) {
+        return res.status(400).json({ message: "Company code already exists. Please choose a different code." });
+      }
+
+      const [company] = await db.insert(companies).values({
+        name: companyName,
+        code: companyCode.toUpperCase(),
+        address: companyAddress || null,
+      }).returning();
+
+      const [owner] = await db.insert(users).values({
+        email: ownerEmail.toLowerCase(),
+        password: hashPassword(password),
+        name: ownerName,
+        phone: ownerPhone || null,
+        role: "owner",
+        companyId: company.id,
+      }).returning();
+
+      const now = new Date();
+      const endDate = new Date(now);
+      endDate.setFullYear(endDate.getFullYear() + 1);
+
+      await db.insert(contracts).values({
+        userId: owner.id,
+        startDate: now,
+        endDate: endDate,
+        isActive: true,
+      });
+
+      res.json({ 
+        message: "Company registered successfully",
+        company: { id: company.id, name: company.name, code: company.code },
+      });
+    } catch (error) {
+      console.error("Company registration error:", error);
+      res.status(500).json({ message: "Failed to register company" });
+    }
+  });
+
   app.post("/api/auth/register", async (req, res) => {
     try {
       const { email, password, name, companyCode, role = "staff", marketId } = req.body;

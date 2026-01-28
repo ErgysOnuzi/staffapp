@@ -3,6 +3,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
 import MainTabNavigator from "@/navigation/MainTabNavigator";
 import LoginScreen from "@/screens/LoginScreen";
+import RegisterCompanyScreen from "@/screens/RegisterCompanyScreen";
 import SOSScreen from "@/screens/SOSScreen";
 import SubmitRequestScreen from "@/screens/SubmitRequestScreen";
 import SettingsScreen from "@/screens/SettingsScreen";
@@ -17,6 +18,7 @@ import { View, ActivityIndicator, StyleSheet } from "react-native";
 
 export type RootStackParamList = {
   Login: undefined;
+  RegisterCompany: undefined;
   Consent: undefined;
   Main: undefined;
   SOS: undefined;
@@ -105,11 +107,18 @@ export default function RootStackNavigator() {
           />
         </>
       ) : (
-        <Stack.Screen
-          name="Login"
-          component={LoginScreen}
-          options={{ headerShown: false }}
-        />
+        <>
+          <Stack.Screen
+            name="Login"
+            component={LoginScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="RegisterCompany"
+            component={RegisterCompanyScreen}
+            options={{ headerShown: false }}
+          />
+        </>
       )}
     </Stack.Navigator>
   );
