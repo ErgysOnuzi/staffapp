@@ -10,6 +10,7 @@ StaffHub is a comprehensive staff management mobile application built with Expo 
 
 ## Features
 - **Authentication**: Login with email/password and company code
+- **Company Registration**: New companies can sign up and create an owner account
 - **Home Dashboard**: Status overview, today's shift, accumulated salary, notifications, quick actions
 - **Role-Based Navigation**: Different tabs and features based on user role
 - **Schedule**: Weekly calendar view with shifts, break times, and positions (Staff only)
@@ -17,6 +18,9 @@ StaffHub is a comprehensive staff management mobile application built with Expo 
 - **Team Management**: View team members and approve/reject requests (Manager only)
 - **Requests**: Submit and track requests/reports with status filtering
 - **Profile**: User info, salary summary, contract details, settings
+  - **Contract Details**: View contract start/end dates, renewal status, and days remaining
+  - **Edit Profile**: Update name, phone number (profile picture coming soon)
+  - **Security**: Change password and toggle 2FA (preparation for future 2FA)
 - **SOS Emergency**: Quick access to emergency services (Police, Security, Ambulance, Firefighters)
 - **Settings**: Theme, accent color, language, security options
 
