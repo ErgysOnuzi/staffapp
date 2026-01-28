@@ -7,6 +7,9 @@ import SOSScreen from "@/screens/SOSScreen";
 import SubmitRequestScreen from "@/screens/SubmitRequestScreen";
 import SettingsScreen from "@/screens/SettingsScreen";
 import ConsentScreen from "@/screens/ConsentScreen";
+import ContractDetailsScreen from "@/screens/ContractDetailsScreen";
+import EditProfileScreen from "@/screens/EditProfileScreen";
+import SecurityScreen from "@/screens/SecurityScreen";
 import { useScreenOptions } from "@/hooks/useScreenOptions";
 import { useAuth } from "@/context/AuthContext";
 import { ThemedView } from "@/components/ThemedView";
@@ -19,6 +22,9 @@ export type RootStackParamList = {
   SOS: undefined;
   SubmitRequest: undefined;
   Settings: undefined;
+  ContractDetails: undefined;
+  EditProfile: undefined;
+  Security: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -74,6 +80,27 @@ export default function RootStackNavigator() {
             component={SettingsScreen}
             options={{
               headerTitle: "Settings",
+            }}
+          />
+          <Stack.Screen
+            name="ContractDetails"
+            component={ContractDetailsScreen}
+            options={{
+              headerTitle: "Contract Details",
+            }}
+          />
+          <Stack.Screen
+            name="EditProfile"
+            component={EditProfileScreen}
+            options={{
+              headerTitle: "Edit Profile",
+            }}
+          />
+          <Stack.Screen
+            name="Security"
+            component={SecurityScreen}
+            options={{
+              headerTitle: "Security",
             }}
           />
         </>

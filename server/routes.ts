@@ -167,6 +167,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put("/api/profile", authenticate, async (req, res) => {
+    try {
+      const { name, phone, profilePicture } = req.body;
+      
+      const [updated] = await db.update(users)
+        .set({ name, phone, profilePicture, updatedAt: new Date() })
+        .where(eq(users.id, req.user!.id))
+        .returning();
+
+      const { password: _, ...userWithoutPassword } = updated;
+      res.json(userWithoutPassword);
+    } catch (error) {
+      res.status(500).json({ error: "Update failed" });
+    }
+  });
+
+  app.put("/api/profile/password", authenticate, async (req, res) => {
+    try {
+      const { currentPassword, newPassword } = req.body;
+      
+      if (!currentPassword || !newPassword) {
+        return res.status(400).json({ error: "Current and new password are required" });
+      }
+
+      if (newPassword.length < 8) {
+        return res.status(400).json({ error: "New password must be at least 8 characters" });
+      }
+
+      if (!verifyPassword(currentPassword, req.user!.password)) {
+        return res.status(401).json({ error: "Current password is incorrect" });
+      }
+
+      await db.update(users)
+        .set({ password: hashPassword(newPassword), updatedAt: new Date() })
+        .where(eq(users.id, req.user!.id));
+
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Password change failed" });
+    }
+  });
+
+  app.put("/api/profile/2fa", authenticate, async (req, res) => {
+    try {
+      const { enabled } = req.body;
+      
+      await db.update(users)
+        .set({ twoFactorEnabled: enabled, updatedAt: new Date() })
+        .where(eq(users.id, req.user!.id));
+
+      res.json({ success: true, twoFactorEnabled: enabled });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update 2FA setting" });
+    }
+  });
+
+  app.get("/api/contracts/current", authenticate, async (req, res) => {
+    try {
+      const [contract] = await db.select().from(contracts)
+        .where(and(eq(contracts.userId, req.user!.id), eq(contracts.isActive, true)))
+        .orderBy(desc(contracts.createdAt))
+        .limit(1);
+
+      if (!contract) {
+        return res.status(404).json({ error: "No active contract found" });
+      }
+
+      res.json(contract);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch contract" });
+    }
+  });
+
   app.get("/api/users", authenticate, requireRole(...TEAM_MANAGEMENT_ROLES), async (req, res) => {
     try {
       const companyId = req.user!.companyId;

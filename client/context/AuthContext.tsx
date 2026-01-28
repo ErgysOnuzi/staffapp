@@ -8,6 +8,7 @@ export interface User {
   name: string;
   email: string;
   phone?: string;
+  profilePicture?: string;
   role: "owner" | "admin" | "cfo" | "hr_admin" | "manager" | "supervisor" | "staff";
   standing: "all_good" | "good" | "at_risk";
   marketId?: string;
@@ -17,6 +18,7 @@ export interface User {
   theme?: string;
   accentColor?: string;
   language?: string;
+  twoFactorEnabled?: boolean;
   contract?: {
     id: string;
     startDate: string;
