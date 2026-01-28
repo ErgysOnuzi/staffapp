@@ -1,48 +1,55 @@
 {
   "expo": {
-    "name": "StaffHub",
+    "name": "Unified Staff Management System",
     "slug": "staffhub",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "staffhub",
+    "scheme": "staff-management-secure",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "newArchEnabled": true
+
     "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.staffhub.app"
+      "supportsTablet": true
     },
+
     "android": {
+      "package": "com.ergysonuzi.staffmanagementsecure",
+      "versionCode": 4,
       "adaptiveIcon": {
-        "backgroundColor": "#1A73E8",
-        "foregroundImage": "./assets/images/icon.png"
+        "foregroundImage": "./assets/images/icon.png",
+        "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false,
-      "package": "com.staffhub.app"
+      "edgeToEdgeEnabled": true
     },
+
     "web": {
-      "output": "single",
+      "bundler": "metro",
+      "output": "static",
       "favicon": "./assets/images/favicon.png"
     },
+
     "plugins": [
+      "expo-router",
       [
         "expo-splash-screen",
         {
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#1A73E8",
-          "dark": {
-            "backgroundColor": "#121212"
-          }
+          "backgroundColor": "#ffffff"
         }
-      ],
-      "expo-web-browser"
+      ]
     ],
+
     "experiments": {
-      "reactCompiler": true
+      "typedRoutes": true
     },
+
+    "runtimeVersion": {
+      "policy": "sdkVersion"
+    },
+
     "extra": {
       "eas": {
         "projectId": "6197eca5-f9d4-4071-b5c2-48b33c4cc5bf"
