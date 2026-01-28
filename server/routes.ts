@@ -36,6 +36,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/register-company", async (req, res) => {
+    try {
+      const { companyName, companyCode, companyAddress, ownerName, ownerEmail, ownerPhone, password } = req.body;
+
+      if (!companyName || !companyCode || !ownerName || !ownerEmail || !password) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+
+      if (companyCode.length < 4) {
+        return res.status(400).json({ message: "Company code must be at least 4 characters" });
+      }
+
+      if (password.length < 8) {
+        return res.status(400).json({ message: "Password must be at least 8 characters" });
+      }
+
+      const existingCompany = await db.select().from(companies).where(eq(companies.code, companyCode.toUpperCase())).limit(1);
+      if (existingCompany.length > 0) {
+        return res.status(400).json({ message: "Company code already exists. Please choose a different code." });
+      }
+
+      const [company] = await db.insert(companies).values({
+        name: companyName,
+        code: companyCode.toUpperCase(),
+        address: companyAddress || null,
+      }).returning();
+
+      const [owner] = await db.insert(users).values({
+        email: ownerEmail.toLowerCase(),
+        password: hashPassword(password),
+        name: ownerName,
+        phone: ownerPhone || null,
+        role: "owner",
+        companyId: company.id,
+      }).returning();
+
+      const now = new Date();
+      const endDate = new Date(now);
+      endDate.setFullYear(endDate.getFullYear() + 1);
+
+      await db.insert(contracts).values({
+        userId: owner.id,
+        startDate: now,
+        endDate: endDate,
+        isActive: true,
+      });
+
+      res.json({ 
+        message: "Company registered successfully",
+        company: { id: company.id, name: company.name, code: company.code },
+      });
+    } catch (error) {
+      console.error("Company registration error:", error);
+      res.status(500).json({ message: "Failed to register company" });
+    }
+  });
+
   app.post("/api/auth/register", async (req, res) => {
     try {
       const { email, password, name, companyCode, role = "staff", marketId } = req.body;
@@ -164,6 +221,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(userWithoutPassword);
     } catch (error) {
       res.status(500).json({ error: "Update failed" });
+    }
+  });
+
+  app.put("/api/profile", authenticate, async (req, res) => {
+    try {
+      const { name, phone, profilePicture } = req.body;
+      
+      const [updated] = await db.update(users)
+        .set({ name, phone, profilePicture, updatedAt: new Date() })
+        .where(eq(users.id, req.user!.id))
+        .returning();
+
+      const { password: _, ...userWithoutPassword } = updated;
+      res.json(userWithoutPassword);
+    } catch (error) {
+      res.status(500).json({ error: "Update failed" });
+    }
+  });
+
+  app.put("/api/profile/password", authenticate, async (req, res) => {
+    try {
+      const { currentPassword, newPassword } = req.body;
+      
+      if (!currentPassword || !newPassword) {
+        return res.status(400).json({ error: "Current and new password are required" });
+      }
+
+      if (newPassword.length < 8) {
+        return res.status(400).json({ error: "New password must be at least 8 characters" });
+      }
+
+      if (!verifyPassword(currentPassword, req.user!.password)) {
+        return res.status(401).json({ error: "Current password is incorrect" });
+      }
+
+      await db.update(users)
+        .set({ password: hashPassword(newPassword), updatedAt: new Date() })
+        .where(eq(users.id, req.user!.id));
+
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Password change failed" });
+    }
+  });
+
+  app.put("/api/profile/2fa", authenticate, async (req, res) => {
+    try {
+      const { enabled } = req.body;
+      
+      await db.update(users)
+        .set({ twoFactorEnabled: enabled, updatedAt: new Date() })
+        .where(eq(users.id, req.user!.id));
+
+      res.json({ success: true, twoFactorEnabled: enabled });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update 2FA setting" });
+    }
+  });
+
+  app.get("/api/contracts/current", authenticate, async (req, res) => {
+    try {
+      const [contract] = await db.select().from(contracts)
+        .where(and(eq(contracts.userId, req.user!.id), eq(contracts.isActive, true)))
+        .orderBy(desc(contracts.createdAt))
+        .limit(1);
+
+      if (!contract) {
+        return res.status(404).json({ error: "No active contract found" });
+      }
+
+      res.json(contract);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch contract" });
     }
   });
 

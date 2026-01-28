@@ -227,6 +227,7 @@ export default function ProfileScreen() {
               </View>
               <Pressable
                 style={[styles.contractButton, { borderColor: theme.link }]}
+                onPress={() => navigation.navigate("ContractDetails")}
               >
                 <ThemedText type="small" style={{ color: theme.link }}>
                   View Details
@@ -244,7 +245,7 @@ export default function ProfileScreen() {
             <MenuItem
               icon="user"
               label="Edit Profile"
-              onPress={() => {}}
+              onPress={() => navigation.navigate("EditProfile")}
             />
             <MenuItem
               icon="settings"
@@ -254,7 +255,7 @@ export default function ProfileScreen() {
             <MenuItem
               icon="globe"
               label="Language"
-              onPress={() => {}}
+              onPress={handleSettings}
               rightContent={
                 <ThemedText type="small" style={{ color: theme.textSecondary }}>
                   English
@@ -264,7 +265,7 @@ export default function ProfileScreen() {
             <MenuItem
               icon="shield"
               label="Security"
-              onPress={() => {}}
+              onPress={() => navigation.navigate("Security")}
             />
           </Card>
         </Animated.View>

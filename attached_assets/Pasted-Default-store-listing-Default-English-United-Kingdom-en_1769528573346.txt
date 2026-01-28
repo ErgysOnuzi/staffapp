@@ -1,0 +1,79 @@
+Default store listing
+
+Default – English (United Kingdom) – en-GB
+* – Required fields. Enter all fields in English (United Kingdom) – en-GB
+
+Listing assets
+Check the Metadata policy and Help Centre guidance to avoid common issues with your Store Listing. Review all programme policies before submitting your app.
+
+If you're eligible to provide advance notice to the app review team, contact us before publishing your Store Listing.
+
+App name *
+Staff App
+This is how your app will appear on Google Play 
+
+9 / 30
+Text is 9 characters out of 30
+Short description *
+Staff management app for employees, managers  .
+A short description for your app. Users can expand to view your full description. 
+
+47 / 80
+Text is 47 characters out of 80
+Full description *
+Staff App is a business management application designed to help companies manage their employees, contracts and internal requests in one place.
+The app provides role-based access for staff, managers and administrators.
+Main features:
+• Secure login with role-based permissions
+• Employee profile management
+• Contract start and end date tracking
+• Internal request management
+• Admin dashboard for full system control
+• Manager access to assigned staff
+• Staff access to personal data only
+Staff App is built for internal company use and is suitable for small and medium-sized businesses that want a simple and secure way to manage their workforce.
+The app does not include advertisements and does not sell user data.
+ 
+
+717 / 4000
+Text is 717 characters out of 4000
+Graphics
+Manage your app icon, screenshots and videos to promote your app on Google Play. Review the content guidelines before uploading new graphics. If you add translations for your Store Listing without localised graphics, we will use the graphics from your default language.
+
+App icon *
+Your app icon must be a PNG or JPEG, up to 1 MB, 512 px by 512 px, and meet our design specifications and metadata policy
+
+Feature graphic *
+Your feature graphic must be a PNG or JPEG, up to 15 MB and 1,024 px by 500 px
+
+Video
+https://www.youtube.com/watch?v=
+Add a video by entering a YouTube URL. This video must be public or unlisted, ads must be turned off and it must not be age restricted. 
+
+Phone
+Phone screenshots *
+Upload 2–8 phone screenshots. Screenshots must be PNG or JPEG, up to 8 MB each, 16:9 or 9:16 aspect ratio, with each side between 320 px and 3,840 px
+
+To be eligible for promotion, include at least 4 screenshots at a minimum of 1080 px on each side.
+Tablet
+7-inch tablet screenshots *
+Upload up to eight 7-inch tablet screenshots. Screenshots must be PNG or JPEG, up to 8 MB each, 16:9 or 9:16 aspect ratio, with each side between 320 px and 3,840 px
+
+10-inch tablet screenshots *
+Upload up to eight 10-inch tablet screenshots. Screenshots must be PNG or JPEG, up to 8 MB each, 16:9 or 9:16 aspect ratio, with each side between 1,080 px and 7,680 px
+
+Chromebook
+Chromebook screenshots
+Upload 4–8 screenshots. Screenshots must be PNG or JPEG, up to 8 MB each, 16:9 or 9:16 aspect ratio, with each side between 1,080 px and 7,680 px
+
+Android XR
+Android XR screenshots
+Upload 4–8 screenshots. Screenshots must be PNG or JPEG, up to 15 MB each, 16:9 or 9:16 aspect ratio, with each side between 720 px and 7,680 px
+
+Spatial XR video
+https://www.youtube.com/watch?v=
+Add a spatial XR video for an immersive preview of your features by entering a YouTube URL. This video must be in 360°, 180° or 3D, be public or unlisted, ads must be turned off and it must not be age restricted.
+
+Non-spatial XR video
+https://www.youtube.com/watch?v=
+Add a non-spatial XR video by entering a YouTube URL. This video must be public or unlisted, ads must be turned off and it must not be age restri

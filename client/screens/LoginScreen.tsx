@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { View, StyleSheet, Image, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import * as Haptics from "expo-haptics";
 import Animated, {
   FadeInDown,
@@ -14,9 +16,13 @@ import { Button } from "@/components/Button";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/context/AuthContext";
 import { Spacing, SemanticColors } from "@/constants/theme";
+import { RootStackParamList } from "@/navigation/RootStackNavigator";
+
+type NavigationProp = NativeStackNavigationProp<RootStackParamList, "Login">;
 
 export default function LoginScreen() {
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation<NavigationProp>();
   const { theme } = useTheme();
   const { login } = useAuth();
 
@@ -130,8 +136,19 @@ export default function LoginScreen() {
         entering={FadeInUp.duration(600).delay(500)}
         style={[styles.footer, { paddingBottom: insets.bottom + Spacing.xl }]}
       >
-        <ThemedText type="small" style={{ color: theme.textSecondary, textAlign: "center" }}>
-          Contact your administrator for account access
+        <Pressable
+          style={styles.registerLink}
+          onPress={() => navigation.navigate("RegisterCompany")}
+        >
+          <ThemedText type="body" style={{ color: theme.textSecondary }}>
+            New company?{" "}
+          </ThemedText>
+          <ThemedText type="link" style={{ color: theme.link }}>
+            Register Here
+          </ThemedText>
+        </Pressable>
+        <ThemedText type="small" style={{ color: theme.textSecondary, textAlign: "center", marginTop: Spacing.md }}>
+          Contact your administrator for employee account access
         </ThemedText>
       </Animated.View>
     </ThemedView>
@@ -174,5 +191,11 @@ const styles = StyleSheet.create({
   },
   footer: {
     alignItems: "center",
+  },
+  registerLink: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: Spacing.sm,
   },
 });
